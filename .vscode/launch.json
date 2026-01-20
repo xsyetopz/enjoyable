@@ -19,6 +19,26 @@
             "target": "Enjoyable",
             "configuration": "release",
             "preLaunchTask": "swift: Build Release Enjoyable"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:enjoyable}",
+            "name": "Debug Enjoyable",
+            "target": "Enjoyable",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Enjoyable"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:enjoyable}",
+            "name": "Release Enjoyable",
+            "target": "Enjoyable",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Enjoyable"
         }
     ]
 }
