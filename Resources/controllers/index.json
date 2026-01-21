@@ -1,0 +1,22 @@
+{
+  "schema": "controller-index-v1",
+  "version": 1,
+  "controllers": [
+    {
+      "id": "gamesir-g7-se",
+      "path": "devices/gamesir/g7_se.json",
+      "vendorId": 13623,
+      "productId": 4112,
+      "priority": 100,
+      "enabled": true
+    },
+    {
+      "id": "xbox-one-controller",
+      "path": "devices/microsoft/xbox_one.json",
+      "vendorId": 1118,
+      "productId": 746,
+      "priority": 100,
+      "enabled": true
+    }
+  ]
+}

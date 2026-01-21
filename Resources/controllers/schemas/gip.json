@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$comment": "GIP (Xbox One) Controller Configuration Schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for this controller"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "vendorId": {
+      "type": "integer",
+      "description": "USB Vendor ID (decimal)"
+    },
+    "productId": {
+      "type": "integer",
+      "description": "USB Product ID (decimal)"
+    },
+    "transport": {
+      "type": "string",
+      "enum": [
+        "usb",
+        "bluetooth"
+      ]
+    },
+    "protocolTypeStr": {
+      "type": "string",
+      "enum": [
+        "gip"
+      ],
+      "description": "Protocol type - must be 'gip' for Xbox One controllers"
+    },
+    "reportSize": {
+      "type": "integer",
+      "description": "Size of input reports (usually 36 for GIP)"
+    },
+    "manufacturer": {
+      "type": "string"
+    },
+    "endpoints": {
+      "type": "object",
+      "properties": {
+        "in": {
+          "type": "integer",
+          "description": "Input endpoint (decimal, e.g., 130 for 0x82)"
+        },
+        "out": {
+          "type": "integer",
+          "description": "Output endpoint (decimal, e.g., 2 for 0x02)"
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "vibration": {
+          "type": "boolean"
+        },
+        "rgb": {
+          "type": "boolean"
+        },
+        "touchpad": {
+          "type": "boolean"
+        }
+      }
+    },
+    "initSequence": {
+      "type": "array",
+      "description": "Sequence of init commands to send to controller",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "write",
+              "read",
+              "delay",
+              "waitForAck"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Command bytes (for write type)"
+          },
+          "delayMs": {
+            "type": "integer",
+            "description": "Delay in milliseconds (for delay type)"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      }
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "vendorId",
+    "productId",
+    "transport",
+    "protocolTypeStr",
+    "reportSize"
+  ]
+}
