@@ -1,10 +1,10 @@
 # Enioyable
 
-Enjoyable is an application for macOS which allows you to use
-controller inputs like a mouse or keyboard.
+Enjoyable is application for macOS which allows you to use
+controller inputs like mouse or keyboard.
 
-If you've ever played a video game which only supports mouse and
-keyboard input but you want to use a joystick or gamepad, then
+If you've ever played video game which only supports mouse and
+keyboard input but you want to use joystick or gamepad, then
 Enjoyable will help you do that.
 
 ## Enjoyable supports
@@ -22,18 +22,13 @@ and [Sam McCall](http://abstractable.net/enjoy/).
 
 ## How to Use
 
-To start, just press a button on your joystick or gamepad, then press
-the key you want to map it for. Then press the `▶` button and switch
-back to your game. For more details, Enjoyable has a in-application
-manual available in Help Viewer via `⌘?`.
+To start, just... `swift run` and ...that is it. Not sure what else.
 
 ## Requirements
 
-* macOS 10.15+
+* macOS 15+
 * One or more HID-compatible (e.g. USB or Bluetooth) input devices
 
 ## License
 
-This software is licensed under the MIT license. See the [LICENSE](LICENSE) file for details.
-
-The joystick icon is from the Tango icon set and is public domain.
+This software is licensed under MIT license. See [LICENSE](LICENSE) file for details.
