@@ -2,6 +2,7 @@ import Foundation
 
 enum EnjoyableError: Error, LocalizedError {
   case transport(TransportError)
+  case protocolError(ProtocolError)
   case controller(ControllerError)
   case output(OutputError)
   case configuration(ConfigurationError)
@@ -9,6 +10,8 @@ enum EnjoyableError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .transport(let error):
+      return error.localizedDescription
+    case .protocolError(let error):
       return error.localizedDescription
     case .controller(let error):
       return error.localizedDescription
@@ -48,6 +51,20 @@ enum TransportError: Error, LocalizedError {
       return "USB device not found"
     case .propertyNotFound:
       return "USB property not found"
+    }
+  }
+}
+
+enum ProtocolError: Error, LocalizedError {
+  case invalidReportSize(expected: Int, actual: Int)
+  case invalidResponse
+
+  var errorDescription: String? {
+    switch self {
+    case .invalidReportSize(let expected, let actual):
+      return "Invalid report size: expected \(expected), got \(actual)"
+    case .invalidResponse:
+      return "Invalid response from device"
     }
   }
 }
