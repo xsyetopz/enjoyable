@@ -166,6 +166,10 @@ enum Constants {
     static let devicesListHeight: CGFloat = 400
   }
 
+  enum Timeouts {
+    static let usbWriteTimeoutMs: UInt32 = 1000
+  }
+
   enum NotificationNames {
     static let passthroughModeChanged = "passthroughModeChanged"
   }
