@@ -241,25 +241,25 @@ struct ProtocolDetector: Sendable {
   ) -> ControllerConfig {
     let reportSize: Int
     let endpoints: Endpoints
-    let initSequence: [InitializationStep]
+    let initSequence: [InitStep]
 
     switch protocolType {
     case .gip:
       reportSize = 36
       endpoints = Endpoints(in: 0x81, out: 0x02)
       initSequence = [
-        InitializationStep(type: .write, data: [0x05, 0x20, 0x00, 0x01, 0x00]),
-        InitializationStep(type: .delay, delayMs: 10),
-        InitializationStep(type: .write, data: [0x0A, 0x20, 0x00, 0x03, 0x00, 0x01, 0x14]),
-        InitializationStep(type: .delay, delayMs: 10),
-        InitializationStep(type: .write, data: [0x06, 0x20, 0x00, 0x02, 0x01, 0x00]),
+        InitStep(type: .write, data: [0x05, 0x20, 0x00, 0x01, 0x00]),
+        InitStep(type: .delay, delayMs: 10),
+        InitStep(type: .write, data: [0x0A, 0x20, 0x00, 0x03, 0x00, 0x01, 0x14]),
+        InitStep(type: .delay, delayMs: 10),
+        InitStep(type: .write, data: [0x06, 0x20, 0x00, 0x02, 0x01, 0x00]),
       ]
     case .xinput:
       reportSize = 14
       endpoints = Endpoints(in: 0x81, out: 0x02)
       initSequence = [
-        InitializationStep(type: .write, data: [0x01, 0x03, 0x00]),
-        InitializationStep(type: .delay, delayMs: 10),
+        InitStep(type: .write, data: [0x01, 0x03, 0x00]),
+        InitStep(type: .delay, delayMs: 10),
       ]
     case .hid, .switchHID, .ps4HID, .ps5HID:
       reportSize = 64

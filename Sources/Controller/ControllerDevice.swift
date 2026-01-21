@@ -132,7 +132,7 @@ final class ControllerDevice: ControllerDeviceProtocol, Sendable {
     )
   }
 
-  private func runInitSequence(_ steps: [InitializationStep]) async throws {
+  private func runInitSequence(_ steps: [InitStep]) async throws {
     for step in steps {
       switch step.type {
       case .write:

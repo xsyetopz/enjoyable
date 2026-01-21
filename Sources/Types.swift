@@ -4,11 +4,6 @@ import Foundation
 typealias DeviceId = UUID
 typealias VendorId = UInt16
 typealias ProductId = UInt16
-typealias HIDUsageId = UInt32
-typealias HIDUsagePage = UInt32
-
-typealias ReportData = Data
-typealias CommandData = Data
 
 typealias ButtonSet = Set<GamepadButton>
 typealias KeyCode = UInt64
@@ -113,21 +108,6 @@ enum ActionType {
   case mouseScroll
 }
 
-enum LEDPattern: UInt8 {
-  case off = 0x00
-  case on = 0x01
-  case blink = 0x02
-  case pulse = 0x03
-  case cycle = 0x04
-}
-
-enum ControllerMode: UInt8 {
-  case xinput = 0x00
-  case dinput = 0x01
-  case android = 0x02
-  case `switch` = 0x03
-}
-
 struct StickPosition: Sendable {
   var x: Float
   var y: Float
@@ -146,16 +126,7 @@ struct DeadZones: Codable {
   var triggers: Float?
 }
 
-struct StickCalibration: Sendable {
-  var centerX: Float = 0.0
-  var centerY: Float = 0.0
-  var minX: Float = -1.0
-  var maxX: Float = 1.0
-  var minY: Float = -1.0
-  var maxY: Float = 1.0
-}
-
-struct InitializationStep: Codable {
+struct InitStep: Codable {
   var type: StepType
   var data: [UInt8]?
   var delayMs: UInt32?
@@ -247,13 +218,4 @@ struct Mapping {
   var name: String
   var controllerId: String
   var inputMappings: [String: OutputAction]
-}
-
-struct USBDeviceInfo: Identifiable {
-  let id = UUID()
-  var vendorId: UInt16 = 0
-  var productId: UInt16 = 0
-  var name: String = ""
-  var manufacturer: String = ""
-  var serialNumber: String = ""
 }

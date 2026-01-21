@@ -15,7 +15,7 @@ struct ControllerConfig: Codable {
   let protocolConfig: ProtocolConfigData?
   let buttonMapping: [ButtonMappingEntry]?
   let reportFormat: ReportFormat?
-  let initSequence: [InitializationStep]?
+  let initSequence: [InitStep]?
 
   var transportType: TransportType {
     switch transport.lowercased() {
