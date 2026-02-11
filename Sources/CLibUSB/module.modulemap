@@ -1,5 +1,0 @@
-module LibUSB {
-    header "LibUSBBridge.h"
-    link "usb-1.0"
-    export *
-}
