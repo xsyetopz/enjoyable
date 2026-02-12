@@ -21,6 +21,13 @@
       "data": "0A200003000114"
     }
   ],
+  "shutdownSteps": [
+    {
+      "description": "GIP LED Off",
+      "type": "gip",
+      "data": "09090000000000000000"
+    }
+  ],
   "reportDescriptor": {
     "reportSize": 18,
     "fields": [
