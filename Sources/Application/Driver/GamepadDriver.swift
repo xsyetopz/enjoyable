@@ -175,7 +175,7 @@ public actor GamepadDriver {
     do {
       try await pause()
     } catch {
-      print("Error pausing driver before sleep: \(error)")
+      NSLog("GamepadDriver: Error pausing driver before sleep: \(error)")
     }
   }
 
@@ -183,7 +183,7 @@ public actor GamepadDriver {
     do {
       try await resume()
     } catch {
-      print("Error resuming driver after wake: \(error)")
+      NSLog("GamepadDriver: Error resuming driver after wake: \(error)")
     }
   }
 }
