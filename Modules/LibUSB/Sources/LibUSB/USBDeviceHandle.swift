@@ -279,7 +279,7 @@ extension USBDeviceHandle {
     return Array(buffer.prefix(bytesRead))
   }
 
-  func writeBulk(
+  public func writeBulk(
     endpointAddress: UInt8,
     data: [UInt8],
     timeout: UInt32 = Config.Timeout.bulkTransfer
