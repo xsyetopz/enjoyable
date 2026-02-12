@@ -38,14 +38,36 @@ public final class GIPParser: @unchecked Sendable {
     let dpadH = report.count > 14 ? Int8(bitPattern: report[14]) : 0
     let dpadV = report.count > 15 ? Int8(bitPattern: report[15]) : 0
 
-    _parseButton(&events, bit: 0x01, buttonID: .a, stateIndex: -100)
-    _parseButton(&events, bit: 0x02, buttonID: .b, stateIndex: -101)
-    _parseButton(&events, bit: 0x04, buttonID: .x, stateIndex: -102)
-    _parseButton(&events, bit: 0x08, buttonID: .y, stateIndex: -103)
-    _parseButton(&events, bit: 0x10, buttonID: .leftShoulder, stateIndex: -104)
-    _parseButton(&events, bit: 0x20, buttonID: .rightShoulder, stateIndex: -105)
-    _parseButton(&events, bit: 0x01, buttonID: .back, stateIndex: -106, sourceByte: buttonByte1)
-    _parseButton(&events, bit: 0x02, buttonID: .start, stateIndex: -107, sourceByte: buttonByte1)
+    _parseButton(&events, bit: ReportFormatConstants.ButtonMasks.a, buttonID: .a, stateIndex: -100)
+    _parseButton(&events, bit: ReportFormatConstants.ButtonMasks.b, buttonID: .b, stateIndex: -101)
+    _parseButton(&events, bit: ReportFormatConstants.ButtonMasks.x, buttonID: .x, stateIndex: -102)
+    _parseButton(&events, bit: ReportFormatConstants.ButtonMasks.y, buttonID: .y, stateIndex: -103)
+    _parseButton(
+      &events,
+      bit: ReportFormatConstants.ButtonMasks.leftShoulder,
+      buttonID: .leftShoulder,
+      stateIndex: -104
+    )
+    _parseButton(
+      &events,
+      bit: ReportFormatConstants.ButtonMasks.rightShoulder,
+      buttonID: .rightShoulder,
+      stateIndex: -105
+    )
+    _parseButton(
+      &events,
+      bit: ReportFormatConstants.ButtonMasks.a,
+      buttonID: .back,
+      stateIndex: -106,
+      sourceByte: buttonByte1
+    )
+    _parseButton(
+      &events,
+      bit: ReportFormatConstants.ButtonMasks.b,
+      buttonID: .start,
+      stateIndex: -107,
+      sourceByte: buttonByte1
+    )
 
     _parseTrigger(&events, rawValue: leftTrigger, triggerID: .left, stateIndex: -10)
     _parseTrigger(&events, rawValue: rightTrigger, triggerID: .right, stateIndex: -11)
