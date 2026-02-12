@@ -10,7 +10,9 @@ public struct ParserFactory {
 
   public func createParser(for descriptor: HIDReportDescriptor) -> (any ReportParser)? {
     guard _capabilities.supportsDescriptorParsing else { return nil }
-    return HIDReportParser(descriptor: descriptor)
+    let parser = HIDReportParser()
+    parser.configure(with: descriptor)
+    return parser
   }
 
   public func createXInputParser() -> (any ReportParser)? {
@@ -73,7 +75,9 @@ public struct ParserFactory {
     var parsers: [any ReportParser] = []
 
     if _capabilities.supportsDescriptorParsing {
-      parsers.append(HIDReportParser(descriptor: HIDReportDescriptor(items: [])))
+      let parser = HIDReportParser()
+      parser.configure(with: HIDReportDescriptor(items: []))
+      parsers.append(parser)
     }
     if _capabilities.supportsXInput {
       parsers.append(XInputParser())
