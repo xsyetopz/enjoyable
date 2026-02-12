@@ -43,4 +43,49 @@ public enum KeyCodeConstants {
     public static let escape: UInt16 = 0x35
     public static let backspace: UInt16 = 0x33
   }
+
+  public enum Arrow {
+    public static let up: UInt16 = 0x3E
+    public static let down: UInt16 = 0x3D
+    public static let left: UInt16 = 0x3B
+    public static let right: UInt16 = 0x3C
+  }
+
+  public enum Modifier {
+    public static let command: UInt16 = 0x37
+    public static let control: UInt16 = 0x3B
+    public static let option: UInt16 = 0x3A
+    public static let shift: UInt16 = 0x38
+    public static let capsLock: UInt16 = 0x39
+  }
+
+  public enum Function {
+    public static let f1: UInt16 = 0x7A
+    public static let f2: UInt16 = 0x78
+    public static let f3: UInt16 = 0x63
+    public static let f4: UInt16 = 0x76
+    public static let f5: UInt16 = 0x60
+    public static let f6: UInt16 = 0x61
+    public static let f7: UInt16 = 0x62
+    public static let f8: UInt16 = 0x64
+    public static let f9: UInt16 = 0x65
+    public static let f10: UInt16 = 0x6D
+    public static let f11: UInt16 = 0x67
+    public static let f12: UInt16 = 0x6F
+    public static let f13: UInt16 = 0x69
+    public static let f14: UInt16 = 0x6B
+    public static let f15: UInt16 = 0x71
+    public static let f16: UInt16 = 0x6A
+    public static let f17: UInt16 = 0x40
+    public static let f18: UInt16 = 0x4F
+    public static let f19: UInt16 = 0x42
+  }
+
+  public enum Navigation {
+    public static let home: UInt16 = 0x73
+    public static let end: UInt16 = 0x77
+    public static let pageUp: UInt16 = 0x74
+    public static let pageDown: UInt16 = 0x79
+    public static let help: UInt16 = 0x72
+  }
 }
