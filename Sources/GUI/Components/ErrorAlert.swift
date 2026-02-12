@@ -143,8 +143,8 @@ struct ErrorAlert_Previews: PreviewProvider {
     ErrorAlert(
       error: "Connection Failed",
       message: "Unable to connect to the device. Please check your USB connection and try again.",
-      retryAction: { print("Retry clicked") },
-      dismissAction: { print("Dismiss clicked") }
+      retryAction: { NSLog("Retry clicked") },
+      dismissAction: { NSLog("Dismiss clicked") }
     )
     .frame(width: 600, height: 400)
   }

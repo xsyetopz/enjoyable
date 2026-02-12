@@ -177,7 +177,6 @@ final class AppState: ObservableObject {
   private func _handleAppCoordinatorEvent(_ event: AppCoordinator.AppCoordinatorEvent) {
     switch event.type {
     case .deviceConnected, .deviceDisconnected, .inputProcessed, .profileChanged, .deviceError:
-      // NOTE: already handled by device discovery subscription
       break
     }
   }
@@ -203,24 +202,31 @@ final class AppState: ObservableObject {
         })
       {
         connectedDevices.append(device)
+        NSLog(
+          "AppState: Detected new device - VendorID: \(device.vendorID), ProductID: \(device.productID)"
+        )
         Task {
           do {
-            let connectedDevice = try await self._usbDeviceService?.connect(
+            guard let service = self._usbDeviceService else {
+              NSLog("AppState: ERROR - _usbDeviceService is nil!")
+              return
+            }
+            NSLog("AppState: Calling connect()...")
+            let connectedDevice = try await service.connect(
               deviceID: Core.USBDeviceID(vendorID: device.vendorID, productID: device.productID)
             )
-            if let connected = connectedDevice {
-              await MainActor.run {
-                var devices = self.connectedDevices
-                if let index = devices.firstIndex(where: {
-                  $0.vendorID == device.vendorID && $0.productID == device.productID
-                }) {
-                  devices[index] = connected
-                  self.connectedDevices = devices
-                }
+            NSLog("AppState: Device connected successfully")
+            await MainActor.run {
+              var devices = self.connectedDevices
+              if let index = devices.firstIndex(where: {
+                $0.vendorID == device.vendorID && $0.productID == device.productID
+              }) {
+                devices[index] = connectedDevice
+                self.connectedDevices = devices
               }
             }
           } catch {
-            print("Failed to connect to device: \(error.localizedDescription)")
+            NSLog("AppState: Failed to connect to device: \(error)")
           }
         }
       }
