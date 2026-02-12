@@ -4,41 +4,41 @@
             "type": "swift",
             "request": "launch",
             "args": [],
-            "cwd": "${workspaceFolder:enjoyable}",
-            "name": "Debug Enjoyable",
-            "target": "Enjoyable",
+            "cwd": "${workspaceFolder:enjoyable-1}",
+            "name": "Debug enjoyable",
+            "target": "enjoyable",
             "configuration": "debug",
-            "preLaunchTask": "swift: Build Debug Enjoyable"
+            "preLaunchTask": "swift: Build Debug enjoyable"
         },
         {
             "type": "swift",
             "request": "launch",
             "args": [],
-            "cwd": "${workspaceFolder:enjoyable}",
-            "name": "Release Enjoyable",
-            "target": "Enjoyable",
+            "cwd": "${workspaceFolder:enjoyable-1}",
+            "name": "Release enjoyable",
+            "target": "enjoyable",
             "configuration": "release",
-            "preLaunchTask": "swift: Build Release Enjoyable"
+            "preLaunchTask": "swift: Build Release enjoyable"
         },
         {
             "type": "swift",
             "request": "launch",
             "args": [],
-            "cwd": "${workspaceFolder:enjoyable}",
-            "name": "Debug Enjoyable",
-            "target": "Enjoyable",
+            "cwd": "${workspaceFolder:enjoyable-1}",
+            "name": "Debug enjoyable-cli",
+            "target": "enjoyable-cli",
             "configuration": "debug",
-            "preLaunchTask": "swift: Build Debug Enjoyable"
+            "preLaunchTask": "swift: Build Debug enjoyable-cli"
         },
         {
             "type": "swift",
             "request": "launch",
             "args": [],
-            "cwd": "${workspaceFolder:enjoyable}",
-            "name": "Release Enjoyable",
-            "target": "Enjoyable",
+            "cwd": "${workspaceFolder:enjoyable-1}",
+            "name": "Release enjoyable-cli",
+            "target": "enjoyable-cli",
             "configuration": "release",
-            "preLaunchTask": "swift: Build Release Enjoyable"
+            "preLaunchTask": "swift: Build Release enjoyable-cli"
         }
     ]
 }
