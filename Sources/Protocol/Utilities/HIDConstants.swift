@@ -168,14 +168,14 @@ public enum ReportFormatConstants {
   public static let playStationReportSize = 8
 
   public enum ButtonMasks {
-    public static let a = 0x01
-    public static let b = 0x02
-    public static let x = 0x04
-    public static let y = 0x08
-    public static let leftShoulder = 0x10
-    public static let rightShoulder = 0x20
-    public static let back = 0x40
-    public static let start = 0x80
+    public static let a: UInt8 = 0x01
+    public static let b: UInt8 = 0x02
+    public static let x: UInt8 = 0x04
+    public static let y: UInt8 = 0x08
+    public static let leftShoulder: UInt8 = 0x10
+    public static let rightShoulder: UInt8 = 0x20
+    public static let back: UInt8 = 0x40
+    public static let start: UInt8 = 0x80
   }
 
   public enum Normalization {
