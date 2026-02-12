@@ -1,7 +1,6 @@
 import Foundation
 
 enum ConfigurationError: Error, LocalizedError {
-  case invalidSchemaVersion(String)
   case missingResourcePath
   case fileNotFound(String)
   case invalidJSON(String)
@@ -10,8 +9,6 @@ enum ConfigurationError: Error, LocalizedError {
 
   var errorDescription: String? {
     switch self {
-    case .invalidSchemaVersion(let version):
-      return "Invalid configuration schema version: \(version)"
     case .missingResourcePath:
       return "Configuration resource path not found"
     case .fileNotFound(let path):
@@ -164,10 +161,6 @@ public final class ConfigurationLoader {
       configuration = try decoder.decode(DeviceConfiguration.self, from: data)
     } catch {
       throw ConfigurationError.invalidJSON(url.path)
-    }
-
-    if configuration.schemaVersion != "1.0" {
-      throw ConfigurationError.invalidSchemaVersion(configuration.schemaVersion)
     }
 
     return configuration

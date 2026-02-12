@@ -117,7 +117,7 @@ public actor LibUSBAdapter {
 
   public func connect(deviceID: LibUSB.USBDeviceID) async throws -> Core.GamepadDevice {
     NSLog("[LibUSBAdapter] connect() called for \(deviceID.vendorID):\(deviceID.productID)")
-    
+
     if _connectedDevices[deviceID] != nil {
       if let cachedDevice = _deviceCache[deviceID] {
         return Core.GamepadDevice(
@@ -128,7 +128,7 @@ public actor LibUSBAdapter {
         )
       }
     }
-    
+
     var device: LibUSB.USBDevice?
 
     if let cachedDevice = _deviceCache[deviceID] {
@@ -405,26 +405,129 @@ public actor LibUSBAdapter {
   }
 
   private func _sendGIPLEDOff(handle: LibUSB.USBDeviceHandle, deviceID: LibUSB.USBDeviceID) async {
-    guard deviceID.vendorID == 0x3537 || deviceID.vendorID == 0x045E else {
+    let config = _configMatcher.bestConfiguration(
+      vendorId: Int(deviceID.vendorID),
+      productId: Int(deviceID.productID)
+    )
+
+    guard let shutdownSteps = config?.shutdownSteps, !shutdownSteps.isEmpty else {
       return
     }
 
-    let ledOffPacket: [UInt8] = [0x09, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-
-    do {
-      guard let device = _deviceCache[deviceID] else {
-        return
-      }
-
-      let endpoint = _findInterruptOutEndpoint(device: device)
-      _ = try handle.writeInterrupt(
-        endpointAddress: endpoint,
-        data: ledOffPacket,
-        timeout: LibUSB.Config.Timeout.interruptTransfer
-      )
-    } catch {
-      NSLog("[LibUSBAdapter] Failed to send GIP LED off packet: \(error)")
+    guard let device = _deviceCache[deviceID] else {
+      return
     }
+
+    for (index, step) in shutdownSteps.enumerated() {
+      do {
+        try await _executeShutdownStep(step, handle: handle, device: device)
+      } catch {
+        NSLog("[LibUSBAdapter] Shutdown step \(index) failed: \(error)")
+      }
+    }
+  }
+
+  private func _executeShutdownStep(
+    _ step: InitStep,
+    handle: LibUSB.USBDeviceHandle,
+    device: LibUSB.USBDevice
+  ) async throws {
+    let timeout = UInt32(step.timeout ?? 1000)
+
+    switch step.type {
+    case .gip:
+      if let dataBytes = step.dataBytes {
+        let endpoint = _findEndpointForDevice(
+          device: device,
+          direction: .out,
+          transferType: .interrupt
+        )
+        try await _sendPacket(
+          handle: handle,
+          endpoint: endpoint,
+          data: [UInt8](dataBytes),
+          timeout: timeout
+        )
+      }
+    case .interrupt:
+      if let endpointAddress = step.endpoint {
+        if let dataBytes = step.dataBytes {
+          let endpoint = UInt8(endpointAddress)
+          try await _sendPacket(
+            handle: handle,
+            endpoint: endpoint,
+            data: [UInt8](dataBytes),
+            timeout: timeout
+          )
+        }
+      }
+    case .control:
+      if let dataBytes = step.dataBytes {
+        let bmRequestType = UInt8(step.requestType ?? 0x21)
+        let bRequest = UInt8(step.request ?? 0x09)
+        let wValue = UInt16(step.value ?? 0x0200)
+        let wIndex = UInt16(step.index ?? 0)
+
+        _ = try handle.writeControl(
+          requestType: bmRequestType,
+          request: bRequest,
+          value: wValue,
+          index: wIndex,
+          data: [UInt8](dataBytes),
+          timeout: timeout
+        )
+      }
+    case .bulk:
+      if let endpointAddress = step.endpoint {
+        if let dataBytes = step.dataBytes {
+          let endpoint = UInt8(endpointAddress)
+          _ = try handle.writeBulk(
+            endpointAddress: endpoint,
+            data: [UInt8](dataBytes),
+            timeout: timeout
+          )
+        }
+      }
+    }
+
+    if let command = step.command, command.contains("delay") {
+      let delayMs = step.timeout ?? 50
+      try await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
+    }
+  }
+
+  private func _findEndpointForDevice(
+    device: LibUSB.USBDevice,
+    direction: LibUSB.EndpointDirection,
+    transferType: LibUSB.TransferType
+  ) -> UInt8 {
+    do {
+      let config = try device.getActiveConfigurationDescriptor()
+      for interface in config.getInterfaces() {
+        for endpoint in interface.getEndpoints() {
+          if endpoint.transferType == transferType && endpoint.direction == direction {
+            return endpoint.address
+          }
+        }
+      }
+    } catch {
+      NSLog("[LibUSBAdapter] Failed to get active configuration descriptor: \(error)")
+    }
+
+    return direction == .out ? 0x02 : 0x81
+  }
+
+  private func _sendPacket(
+    handle: LibUSB.USBDeviceHandle,
+    endpoint: UInt8,
+    data: [UInt8],
+    timeout: UInt32
+  ) async throws {
+    _ = try handle.writeInterrupt(
+      endpointAddress: endpoint,
+      data: data,
+      timeout: timeout
+    )
   }
 
   public func readReport(

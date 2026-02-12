@@ -46,7 +46,7 @@ public enum InitStepType: String, Codable {
   case gip = "gip"
 }
 
-public enum TransferDirection: String, Codable {
+public enum DataTransferDirection: String, Codable {
   case inOut = "in"
   case out = "out"
 }
@@ -59,7 +59,7 @@ public struct InitStep: Codable, Equatable {
   public let value: Int?
   public let index: Int?
   public let data: String?
-  public let direction: TransferDirection?
+  public let direction: DataTransferDirection?
   public let endpoint: Int?
   public let length: Int?
   public let timeout: Int?
@@ -225,19 +225,19 @@ public struct DeviceQuirk: Codable, Equatable {
 }
 
 public struct DeviceConfiguration: Codable, Equatable {
-  public let schemaVersion: String
   public let device: DeviceInfo
   public let protocolType: ProtocolType
   public let initialization: [InitStep]
+  public let shutdownSteps: [InitStep]
   public let reportDescriptor: ReportDescriptor
   public let mappings: ButtonMappings
   public let quirks: [DeviceQuirk]
 
   enum CodingKeys: String, CodingKey {
-    case schemaVersion = "schemaVersion"
     case device
     case protocolType = "protocol"
     case initialization
+    case shutdownSteps = "shutdownSteps"
     case reportDescriptor = "reportDescriptor"
     case mappings
     case quirks
@@ -249,10 +249,10 @@ public struct DeviceConfiguration: Codable, Equatable {
     name: String,
     protocolType: ProtocolType
   ) {
-    self.schemaVersion = "1.0"
     self.device = DeviceInfo(vendorId: vendorId, productId: productId, name: name)
     self.protocolType = protocolType
     self.initialization = []
+    self.shutdownSteps = []
     self.reportDescriptor = ReportDescriptor(reportSize: 8, fields: [])
     self.mappings = ButtonMappings(buttons: [:], dpad: nil, axes: nil, triggers: nil)
     self.quirks = []
@@ -266,7 +266,7 @@ public struct DeviceConfiguration: Codable, Equatable {
     return reportDescriptor.field(named: name)
   }
 
-  func hasQuirk(named name: String) -> Bool {
+  public func hasQuirk(named name: String) -> Bool {
     return quirks.contains { $0.name == name && $0.enabled }
   }
 }

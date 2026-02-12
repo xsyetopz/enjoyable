@@ -158,12 +158,34 @@ public actor USBDeviceManager {
     deviceID: Core.USBDeviceID,
     libUSBDeviceID: LibUSB.USBDeviceID
   ) async {
-    if deviceID.vendorID == 0x045E || deviceID.vendorID == 0x3537 {
-      let ledPacket: [UInt8] = [0x09, 0x09, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00]
-      do {
-        _ = try await _adapter.writeReport(deviceID: libUSBDeviceID, data: ledPacket)
-      } catch {
-      }
+    guard let config = _deviceConfigurations[deviceID] else {
+      return
+    }
+
+    await _sendLEDOnCommand(deviceID: deviceID, libUSBDeviceID: libUSBDeviceID, config: config)
+  }
+
+  private func _sendLEDOnCommand(
+    deviceID: Core.USBDeviceID,
+    libUSBDeviceID: LibUSB.USBDeviceID,
+    config: DeviceConfiguration
+  ) async {
+    guard
+      let ledStep = config.initialization.first(where: { step in
+        step.description.lowercased().contains("led")
+          && (step.type == .control || step.type == .interrupt || step.type == .gip)
+      })
+    else {
+      return
+    }
+
+    guard let dataBytes = ledStep.dataBytes else {
+      return
+    }
+
+    do {
+      _ = try await _adapter.writeReport(deviceID: libUSBDeviceID, data: [UInt8](dataBytes))
+    } catch {
     }
   }
 
@@ -213,15 +235,59 @@ public actor USBDeviceManager {
     for deviceID: Core.USBDeviceID,
     libUSBDeviceID: LibUSB.USBDeviceID
   ) async {
-    guard deviceID.vendorID == 0x045E || deviceID.vendorID == 0x3537 else {
+    guard let config = _deviceConfigurations[deviceID] else {
+      return
+    }
+
+    guard _shouldStartKeepalive(config: config) else {
       return
     }
 
     let task = Task {
-      await _keepaliveLoop(deviceID: deviceID, libUSBDeviceID: libUSBDeviceID)
+      await _keepaliveLoop(deviceID: deviceID, libUSBDeviceID: libUSBDeviceID, config: config)
     }
 
     _keepaliveTasks[deviceID] = task
+  }
+
+  private func _shouldStartKeepalive(config: DeviceConfiguration) -> Bool {
+    return config.hasQuirk(named: "keepalive")
+  }
+
+  private func _getKeepalivePacket(config: DeviceConfiguration) -> [UInt8]? {
+    if let keepaliveStep = config.initialization.first(where: { step in
+      step.description.lowercased().contains("keepalive")
+    }) {
+      return keepaliveStep.dataBytes.map { [UInt8]($0) }
+    }
+
+    if let keepaliveQuirk = config.quirks.first(where: { $0.name == "keepalive" && $0.isEnabled() })
+    {
+      if let packetParam = keepaliveQuirk.parameter(named: "packet"),
+        let packetString = packetParam.stringValue
+      {
+        return _parseHexString(packetString)
+      }
+    }
+
+    return nil
+  }
+
+  private func _parseHexString(_ hexString: String) -> [UInt8]? {
+    var bytes = [UInt8]()
+    var hex = hexString.trimmingCharacters(in: .whitespacesAndNewlines)
+    if hex.hasPrefix("0x") {
+      hex = String(hex.dropFirst(2))
+    }
+    var index = hex.startIndex
+    while index < hex.endIndex {
+      let end = hex.index(index, offsetBy: 2, limitedBy: hex.endIndex) ?? hex.endIndex
+      if let byte = UInt8(hex[index..<end], radix: 16) {
+        bytes.append(byte)
+      }
+      index = end
+    }
+    return bytes.isEmpty ? nil : bytes
   }
 
   private func _cancelKeepaliveTask(for deviceID: Core.USBDeviceID) async {
@@ -233,12 +299,17 @@ public actor USBDeviceManager {
     _ = await task.value
   }
 
-  private func _keepaliveLoop(deviceID: Core.USBDeviceID, libUSBDeviceID: LibUSB.USBDeviceID) async
-  {
-    let motorCommand: [UInt8] = [0x09, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00]
+  private func _keepaliveLoop(
+    deviceID: Core.USBDeviceID,
+    libUSBDeviceID: LibUSB.USBDeviceID,
+    config: DeviceConfiguration
+  ) async {
+    guard let keepalivePacket = _getKeepalivePacket(config: config) else {
+      return
+    }
 
     do {
-      _ = try await _adapter.writeReport(deviceID: libUSBDeviceID, data: motorCommand)
+      _ = try await _adapter.writeReport(deviceID: libUSBDeviceID, data: keepalivePacket)
     } catch {
     }
 
@@ -250,7 +321,7 @@ public actor USBDeviceManager {
           break
         }
 
-        _ = try await _adapter.writeReport(deviceID: libUSBDeviceID, data: motorCommand)
+        _ = try await _adapter.writeReport(deviceID: libUSBDeviceID, data: keepalivePacket)
       } catch {
       }
     }

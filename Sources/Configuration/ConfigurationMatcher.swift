@@ -59,13 +59,9 @@ public final class ConfigurationMatcher {
       }
     }
 
-    if let knownProtocol = protocolType ?? _guessProtocol(vendorId: vendorId, productId: productId)
-    {
-      if let config = _protocolCache?[knownProtocol] {
-        return .protocolFallback(config)
-      }
+    if let config = bestConfiguration(vendorId: vendorId, productId: productId) {
+      return .protocolFallback(config)
     }
-
     if let genericConfig = _configurationCache?[0] {
       return .generic(genericConfig)
     }
@@ -90,35 +86,6 @@ public final class ConfigurationMatcher {
     } catch {
       NSLog("[ConfigurationMatcher] Failed to cache configurations: \(error)")
     }
-  }
-
-  private func _guessProtocol(vendorId: Int, productId: Int) -> ProtocolType? {
-    if vendorId == 0x045E {
-      switch productId {
-      case 0x028E, 0x0719:  // Xbox 360 controllers
-        return .xinput
-      case 0x02DD, 0x02E0, 0x02E1, 0x02E3, 0x02E5, 0x02E6, 0x02E7, 0x02FD:  // Xbox One controllers
-        return .gip
-      default:
-        return .xinput
-      }
-    }
-    if vendorId == 0x054C {
-      switch productId {
-      case 0x05C4, 0x09CC, 0x0BA0:  // DualShock 4
-        return .ds4
-      case 0x0CE6:  // DualSense
-        return .hid
-      default:
-        return .hid
-      }
-    }
-
-    if vendorId == 0x057E {
-      return .hid
-    }
-
-    return .hid
   }
 
   func findAllMatching(
