@@ -8,6 +8,7 @@ import LibUSB
   private let _adapter: LibUSBAdapter
   private let _deviceManager: USBDeviceManager
   private let _discovery: USBDiscovery
+  private let _configMatcher: ConfigurationMatcher
   private var _scanTask: Task<Void, Never>?
 
   public init(
@@ -17,6 +18,7 @@ import LibUSB
     self._adapter = adapter
     self._deviceManager = USBDeviceManager(adapter: adapter)
     self._discovery = USBDiscovery(adapter: adapter, eventHandler: eventHandler)
+    self._configMatcher = ConfigurationMatcher()
   }
 
   public func startScanning(interval: UInt32 = Constants.USBTimeout.monitoringMs) {
@@ -50,6 +52,20 @@ import LibUSB
 
   public func getDevice(deviceID: Core.USBDeviceID) async -> GamepadDevice? {
     await _deviceManager.getDevice(deviceID)
+  }
+
+  public func getDeviceConfiguration(deviceID: Core.USBDeviceID) async -> DeviceConfiguration? {
+    _configMatcher.bestConfiguration(
+      vendorId: Int(deviceID.vendorID),
+      productId: Int(deviceID.productID)
+    )
+  }
+
+  public func getDeviceMappings(deviceID: Core.USBDeviceID) async -> ButtonMappings? {
+    _configMatcher.mappings(
+      vendorId: Int(deviceID.vendorID),
+      productId: Int(deviceID.productID)
+    )
   }
 
   public func deviceDiscoveryStream() async -> AsyncStream<[GamepadDevice]> {

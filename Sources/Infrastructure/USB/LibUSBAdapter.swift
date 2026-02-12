@@ -1,3 +1,4 @@
+import Configuration
 @preconcurrency import Core
 import Foundation
 @preconcurrency import LibUSB
@@ -67,7 +68,7 @@ extension LibUSBAdapterError {
     case .noDevicesFound:
       return USBError.scanFailed(underlyingError: "No USB devices found")
     case .initializationFailed(let reason):
-      print("Initialization failed: \(reason)")
+      NSLog("Initialization failed: \(reason)")
       return USBError.configurationError(
         deviceName: deviceName ?? "Unknown Device",
         configurationNumber: 0
@@ -80,9 +81,11 @@ public actor LibUSBAdapter {
   private let _context: USBContext
   private var _connectedDevices: [LibUSB.USBDeviceID: LibUSB.USBDeviceHandle] = [:]
   private var _deviceCache: [LibUSB.USBDeviceID: LibUSB.USBDevice] = [:]
+  private let _configMatcher: ConfigurationMatcher
 
   public init() throws {
     self._context = try USBContext()
+    self._configMatcher = ConfigurationMatcher()
   }
 
   public func scanDevices() async throws -> [Core.GamepadDevice] {
@@ -113,6 +116,7 @@ public actor LibUSBAdapter {
   }
 
   public func connect(deviceID: LibUSB.USBDeviceID) async throws -> Core.GamepadDevice {
+    NSLog("LibUSBAdapter.connect() called for \(deviceID.vendorID):\(deviceID.productID)")
     var device: LibUSB.USBDevice?
 
     if let cachedDevice = _deviceCache[deviceID] {
@@ -122,10 +126,13 @@ public actor LibUSBAdapter {
     }
 
     guard let foundDevice = device else {
+      NSLog("Device not found in cache or USB scan")
       throw LibUSBAdapterError.usbError(.noDevice)
     }
 
+    NSLog("Found device, attempting to open...")
     let handle = try foundDevice.open()
+    NSLog("Device opened successfully")
     _connectedDevices[deviceID] = handle
     _deviceCache[deviceID] = foundDevice
 
@@ -175,43 +182,38 @@ public actor LibUSBAdapter {
       throw LibUSBAdapterError.initializationFailed("Failed to claim interface 0: \(error)")
     }
 
-    if _requiresGIPInitialization(vendorID: deviceID.vendorID) {
-      try await _sendGIPInitializationPackets(handle: handle, device: device)
-    }
-  }
+    let config = _configMatcher.bestConfiguration(
+      vendorId: Int(deviceID.vendorID),
+      productId: Int(deviceID.productID)
+    )
 
-  private func _requiresGIPInitialization(vendorID: UInt16) -> Bool {
-    switch vendorID {
-    case 0x045E, 0x3537:
-      return true
-    default:
-      return false
-    }
-  }
-
-  private func _sendGIPInitializationPackets(
-    handle: LibUSB.USBDeviceHandle,
-    device: LibUSB.USBDevice
-  ) async throws {
-    let endpoint = _findGIPOutEndpoint(device: device)
-    let gipPackets: [[UInt8]] = [
-      [0x05, 0x20, 0x00, 0x01, 0x00],
-      [0x0A, 0x20, 0x00, 0x03, 0x00, 0x01, 0x14],
-      [0x06, 0x20, 0x00, 0x02, 0x01, 0x00],
-    ]
-
-    for (_, packet) in gipPackets.enumerated() {
-      let bytesWritten = try handle.writeInterrupt(
-        endpointAddress: endpoint,
-        data: packet,
-        timeout: LibUSB.Config.Timeout.interruptTransfer
+    if config == nil {
+      NSLog("No configuration found for device \(deviceID.vendorID):\(deviceID.productID)")
+    } else {
+      NSLog(
+        "Found config: \(config?.device.name ?? "unknown"), init steps: \(config?.initialization.count ?? 0)"
       )
+    }
 
-      guard bytesWritten == packet.count else {
-        throw LibUSBAdapterError.usbError(.io)
+    if let initialization = config?.initialization {
+      for (index, step) in initialization.enumerated() {
+        NSLog("Executing init step \(index): \(step.description)")
+        do {
+          try await _executeInitStep(step, handle: handle, device: device)
+          NSLog("Step \(index) completed")
+        } catch {
+          NSLog("Step \(index) failed: \(error)")
+          throw error
+        }
       }
+    }
 
-      try await Task.sleep(nanoseconds: 50_000_000)
+    if let quirks = config?.quirks {
+      for quirk in quirks {
+        if quirk.isEnabled() {
+          try await _applyQuirk(quirk, handle: handle, device: device)
+        }
+      }
     }
   }
 
@@ -234,9 +236,103 @@ public actor LibUSBAdapter {
         }
       }
     } catch {
+      NSLog("Failed to get active configuration descriptor: \(error)")
     }
 
     return 0x02
+  }
+
+  private func _executeInitStep(
+    _ step: InitStep,
+    handle: LibUSB.USBDeviceHandle,
+    device: LibUSB.USBDevice
+  ) async throws {
+    let timeout = UInt32(step.timeout ?? 1000)
+
+    switch step.type {
+    case .control:
+      if let dataBytes = step.dataBytes {
+        let bmRequestType = UInt8(step.requestType ?? 0x21)
+        let bRequest = UInt8(step.request ?? 0x09)
+        let wValue = UInt16(step.value ?? 0x0200)
+        let wIndex = UInt16(step.index ?? 0)
+
+        _ = try handle.writeControl(
+          requestType: bmRequestType,
+          request: bRequest,
+          value: wValue,
+          index: wIndex,
+          data: [UInt8](dataBytes),
+          timeout: timeout
+        )
+      }
+
+    case .interrupt:
+      if let endpointAddress = step.endpoint {
+        if let dataBytes = step.dataBytes {
+          _ = try handle.writeInterrupt(
+            endpointAddress: UInt8(endpointAddress),
+            data: [UInt8](dataBytes),
+            timeout: timeout
+          )
+        }
+      }
+
+    case .bulk:
+      if let endpointAddress = step.endpoint {
+        if let dataBytes = step.dataBytes {
+          _ = try handle.writeBulk(
+            endpointAddress: UInt8(endpointAddress),
+            data: [UInt8](dataBytes),
+            timeout: timeout
+          )
+        }
+      }
+
+    case .gip:
+      if let dataBytes = step.dataBytes {
+        let endpoint = _findGIPOutEndpoint(device: device)
+        NSLog(
+          "LibUSB: Sending GIP packet to endpoint 0x%02X: %@",
+          endpoint,
+          dataBytes.map { String(format: "%02X", $0) }.joined()
+        )
+        _ = try handle.writeInterrupt(
+          endpointAddress: endpoint,
+          data: [UInt8](dataBytes),
+          timeout: timeout
+        )
+        NSLog("LibUSB: GIP packet sent")
+      }
+    }
+
+    if let command = step.command, command.contains("delay") {
+      let delayMs = step.timeout ?? 50
+      try await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
+    }
+  }
+
+  private func _applyQuirk(
+    _ quirk: DeviceQuirk,
+    handle: LibUSB.USBDeviceHandle,
+    device: LibUSB.USBDevice
+  ) async throws {
+    switch quirk.name {
+    case "delayedInit":
+      if let delayParam = quirk.parameter(named: "delayMs") {
+        let delayMs = delayParam.intValue ?? delayParam.doubleValue.map { Int($0) } ?? 50
+        try await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
+      }
+    case "skipKernelDriver":
+      break
+    case "customEndpoint":
+      if let endpointParam = quirk.parameter(named: "interruptIn") {
+        _ = endpointParam.intValue
+      }
+
+    default:
+      break
+    }
   }
 
   private func _findDevice(deviceID: LibUSB.USBDeviceID) async throws -> LibUSB.USBDevice? {

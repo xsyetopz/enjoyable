@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "1.0",
+  "device": {
+    "vendorId": 0,
+    "productId": 0,
+    "name": "Generic HID Gamepad"
+  },
+  "protocol": "hid",
+  "initialization": [],
+  "reportDescriptor": {
+    "reportSize": 8,
+    "fields": [
+      {
+        "name": "buttons",
+        "byte": 2,
+        "bitOffset": 0,
+        "bitLength": 12,
+        "type": "bitfield"
+      },
+      {
+        "name": "dpad",
+        "byte": 2,
+        "bitOffset": 0,
+        "bitLength": 4,
+        "type": "bitfield"
+      },
+      {
+        "name": "leftStickX",
+        "byte": 0,
+        "bitOffset": 0,
+        "bitLength": 8,
+        "type": "unsigned"
+      },
+      {
+        "name": "leftStickY",
+        "byte": 1,
+        "bitOffset": 0,
+        "bitLength": 8,
+        "type": "unsigned"
+      },
+      {
+        "name": "rightStickX",
+        "byte": 3,
+        "bitOffset": 0,
+        "bitLength": 8,
+        "type": "unsigned"
+      },
+      {
+        "name": "rightStickY",
+        "byte": 4,
+        "bitOffset": 0,
+        "bitLength": 8,
+        "type": "unsigned"
+      },
+      {
+        "name": "leftTrigger",
+        "byte": 5,
+        "bitOffset": 0,
+        "bitLength": 8,
+        "type": "unsigned"
+      },
+      {
+        "name": "rightTrigger",
+        "byte": 6,
+        "bitOffset": 0,
+        "bitLength": 8,
+        "type": "unsigned"
+      }
+    ]
+  },
+  "mappings": {
+    "buttons": {
+      "bit0": "A",
+      "bit1": "B",
+      "bit2": "X",
+      "bit3": "Y",
+      "bit4": "LB",
+      "bit5": "RB",
+      "bit6": "back",
+      "bit7": "start",
+      "bit8": "L3",
+      "bit9": "R3"
+    },
+    "dpad": {
+      "bits": {
+        "bit0": "up",
+        "bit1": "down",
+        "bit2": "left",
+        "bit3": "right"
+      }
+    }
+  },
+  "quirks": [
+    {
+      "name": "auto_detect_layout",
+      "enabled": true
+    },
+    {
+      "name": "apply_deadzone",
+      "enabled": true,
+      "parameters": {
+        "deadzone": 0.1
+      }
+    }
+  ]
+}

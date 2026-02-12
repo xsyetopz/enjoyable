@@ -1,3 +1,4 @@
+import Configuration
 import Core
 import Foundation
 import Infrastructure
@@ -5,7 +6,9 @@ import LibUSB
 
 public actor USBDeviceManager {
   private let _adapter: LibUSBAdapter
+  private let _configMatcher: ConfigurationMatcher
   private var _connectedDevices: [Core.USBDeviceID: GamepadDevice] = [:]
+  private var _deviceConfigurations: [Core.USBDeviceID: DeviceConfiguration] = [:]
   private var _deviceReadTasks: [Core.USBDeviceID: Task<Void, Never>] = [:]
   private var _keepaliveTasks: [Core.USBDeviceID: Task<Void, Never>] = [:]
   private let _eventHandler: @Sendable (USBDeviceEvent) -> Void
@@ -15,6 +18,7 @@ public actor USBDeviceManager {
     eventHandler: @escaping @Sendable (USBDeviceEvent) -> Void = { _ in }
   ) {
     self._adapter = adapter
+    self._configMatcher = ConfigurationMatcher()
     self._eventHandler = eventHandler
   }
 
@@ -58,6 +62,14 @@ public actor USBDeviceManager {
 
     let device = try await _adapter.connect(deviceID: libUSBDeviceID)
     _connectedDevices[deviceID] = device
+
+    if let config = _configMatcher.bestConfiguration(
+      vendorId: Int(deviceID.vendorID),
+      productId: Int(deviceID.productID)
+    ) {
+      _deviceConfigurations[deviceID] = config
+    }
+
     return device
   }
 
@@ -106,6 +118,13 @@ public actor USBDeviceManager {
       )
 
       _connectedDevices[deviceID] = updatedDevice
+
+      if let config = _configMatcher.bestConfiguration(
+        vendorId: Int(deviceID.vendorID),
+        productId: Int(deviceID.productID)
+      ) {
+        _deviceConfigurations[deviceID] = config
+      }
 
       let event = USBDeviceEvent(
         type: .connected,
@@ -163,6 +182,8 @@ public actor USBDeviceManager {
     guard let disconnectedDevice = _connectedDevices.removeValue(forKey: deviceID) else {
       return
     }
+
+    _deviceConfigurations.removeValue(forKey: deviceID)
 
     let event = USBDeviceEvent(
       type: .disconnected,
