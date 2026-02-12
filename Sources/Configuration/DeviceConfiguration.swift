@@ -1,13 +1,13 @@
 import Foundation
 
-public enum ProtocolType: String, Codable, CaseIterable {
+public enum ProtocolType: String, Codable, CaseIterable, Sendable {
   case xinput = "xinput"
   case gip = "gip"
   case hid = "hid"
   case ds4 = "ds4"
 }
 
-public struct DeviceInterface: Codable, Equatable {
+public struct DeviceInterface: Codable, Equatable, Sendable {
   let number: Int
   let classCode: UInt8?
   let subclass: UInt8?
@@ -21,7 +21,7 @@ public struct DeviceInterface: Codable, Equatable {
   }
 }
 
-public struct DeviceInfo: Codable, Equatable {
+public struct DeviceInfo: Codable, Equatable, Sendable {
   public let vendorId: Int
   public let productId: Int
   public let name: String
@@ -39,19 +39,19 @@ public struct DeviceInfo: Codable, Equatable {
   }
 }
 
-public enum InitStepType: String, Codable {
+public enum InitStepType: String, Codable, Sendable {
   case control = "control"
   case interrupt = "interrupt"
   case bulk = "bulk"
   case gip = "gip"
 }
 
-public enum DataTransferDirection: String, Codable {
+public enum DataTransferDirection: String, Codable, Sendable {
   case inOut = "in"
   case out = "out"
 }
 
-public struct InitStep: Codable, Equatable {
+public struct InitStep: Codable, Equatable, Sendable {
   public let description: String
   public let type: InitStepType
   public let requestType: Int?
@@ -85,26 +85,39 @@ public struct InitStep: Codable, Equatable {
   }
 }
 
-enum FieldType: String, Codable {
+public enum FieldType: String, Codable, Sendable {
   case unsigned = "unsigned"
   case signed = "signed"
   case bitfield = "bitfield"
   case boolean = "boolean"
 }
 
-struct ReportField: Codable, Equatable {
-  let name: String
-  let byte: Int
-  let bitOffset: Int
-  let bitLength: Int
-  let type: FieldType
+public struct ReportField: Codable, Equatable, Sendable {
+  public let name: String
+  public let byte: Int
+  public let bitOffset: Int
+  public let bitLength: Int
+  public let type: FieldType
+  
+  public init(name: String, byte: Int, bitOffset: Int, bitLength: Int, type: FieldType) {
+    self.name = name
+    self.byte = byte
+    self.bitOffset = bitOffset
+    self.bitLength = bitLength
+    self.type = type
+  }
 }
 
-public struct ReportDescriptor: Codable, Equatable {
-  let reportSize: Int
-  let fields: [ReportField]
-
-  func field(named name: String) -> ReportField? {
+public struct ReportDescriptor: Codable, Equatable, Sendable {
+  public let reportSize: Int
+  public let fields: [ReportField]
+  
+  public init(reportSize: Int, fields: [ReportField]) {
+    self.reportSize = reportSize
+    self.fields = fields
+  }
+  
+  public func field(named name: String) -> ReportField? {
     return fields.first { $0.name == name }
   }
 }
@@ -143,7 +156,7 @@ struct TriggerMapping: Codable, Equatable {
   let analog: Bool
 }
 
-public struct ButtonMappings: Codable, Equatable {
+public struct ButtonMappings: Codable, Equatable, Sendable {
   let buttons: [String: String]
   let dpad: DpadMapping?
   let axes: [String: AxisMapping]?
@@ -157,7 +170,7 @@ public struct ButtonMappings: Codable, Equatable {
   }
 }
 
-public struct QuirkParameter: Codable, Equatable {
+public struct QuirkParameter: Codable, Equatable, Sendable {
   public let stringValue: String?
   public let doubleValue: Double?
   public let boolValue: Bool?
@@ -209,7 +222,7 @@ public struct QuirkParameter: Codable, Equatable {
   }
 }
 
-public struct DeviceQuirk: Codable, Equatable {
+public struct DeviceQuirk: Codable, Equatable, Sendable {
   public let name: String
   public let description: String?
   public let enabled: Bool
@@ -224,7 +237,7 @@ public struct DeviceQuirk: Codable, Equatable {
   }
 }
 
-public struct DeviceConfiguration: Codable, Equatable {
+public struct DeviceConfiguration: Codable, Equatable, Sendable {
   public let device: DeviceInfo
   public let protocolType: ProtocolType
   public let initialization: [InitStep]
