@@ -19,6 +19,16 @@ enum SignalHandlers {
         await _cleanupAndExit()
       }
     }
+
+    NotificationCenter.default.addObserver(
+      forName: NSApplication.willTerminateNotification,
+      object: nil,
+      queue: .main
+    ) { _ in
+      Task {
+        await _cleanupAndExit()
+      }
+    }
   }
 
   static func setService(_ service: USBService?) {

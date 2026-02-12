@@ -117,6 +117,18 @@ public actor LibUSBAdapter {
 
   public func connect(deviceID: LibUSB.USBDeviceID) async throws -> Core.GamepadDevice {
     NSLog("[LibUSBAdapter] connect() called for \(deviceID.vendorID):\(deviceID.productID)")
+    
+    if _connectedDevices[deviceID] != nil {
+      if let cachedDevice = _deviceCache[deviceID] {
+        return Core.GamepadDevice(
+          vendorID: deviceID.vendorID,
+          productID: deviceID.productID,
+          deviceName: _getDeviceName(from: cachedDevice),
+          connectionState: .connected
+        )
+      }
+    }
+    
     var device: LibUSB.USBDevice?
 
     if let cachedDevice = _deviceCache[deviceID] {
@@ -156,22 +168,33 @@ public actor LibUSBAdapter {
     } catch {
     }
 
+    do {
+      try handle.setAutoDetachKernelDriver(enable: true)
+      NSLog("[LibUSBAdapter] Auto-detach kernel driver enabled")
+    } catch {
+      NSLog("[LibUSBAdapter] Failed to enable auto-detach kernel driver: \(error)")
+    }
+
     let kernelDriverActive = handle.kernelDriverActive(interfaceNumber: 0)
     if kernelDriverActive {
       do {
         try handle.detachKernelDriver(interfaceNumber: 0)
+        NSLog("[LibUSBAdapter] Kernel driver detached from interface 0")
       } catch _ as LibUSB.USBError {
+        NSLog("[LibUSBAdapter] LibUSB error while detaching kernel driver (continuing)")
       } catch {
         throw LibUSBAdapterError.initializationFailed(
           "Failed to detach kernel driver from interface 0: \(error)"
         )
       }
     } else {
+      NSLog("[LibUSBAdapter] No kernel driver active on interface 0")
     }
 
     do {
       try handle.setConfiguration(configuration: 1)
     } catch {
+      NSLog("[LibUSBAdapter] Failed to set configuration: \(error)")
     }
 
     do {
@@ -367,6 +390,13 @@ public actor LibUSBAdapter {
   public func disconnect(deviceID: LibUSB.USBDeviceID) async {
     if let handle = _connectedDevices[deviceID] {
       await _sendGIPLEDOff(handle: handle, deviceID: deviceID)
+
+      do {
+        try handle.releaseInterface(interfaceNumber: 0)
+        NSLog("[LibUSBAdapter] Released interface 0 for device \(deviceID)")
+      } catch {
+        NSLog("[LibUSBAdapter] Failed to release interface 0: \(error)")
+      }
 
       handle.close()
       _connectedDevices.removeValue(forKey: deviceID)
