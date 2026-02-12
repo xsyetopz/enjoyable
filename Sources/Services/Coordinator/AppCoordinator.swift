@@ -31,7 +31,6 @@ public actor AppCoordinator {
 
   public func start() async throws {
     let allProfiles = try await _profileService.loadAllProfiles()
-
     for profile in allProfiles {
       if let deviceID = profile.deviceID {
         _deviceToProfileMapping[deviceID] = profile.name
@@ -57,10 +56,7 @@ public actor AppCoordinator {
   }
 
   private func _handleDeviceConnected(_ event: USBDeviceManager.USBDeviceEvent) async {
-    let deviceID = Core.USBDeviceID(
-      vendorID: event.device.vendorID,
-      productID: event.device.productID
-    )
+    guard let deviceID = event.deviceID else { return }
 
     let profileName = _deviceToProfileMapping[deviceID]
     let profile: Profile
@@ -88,10 +84,7 @@ public actor AppCoordinator {
   }
 
   private func _handleDeviceDisconnected(_ event: USBDeviceManager.USBDeviceEvent) async {
-    let deviceID = Core.USBDeviceID(
-      vendorID: event.device.vendorID,
-      productID: event.device.productID
-    )
+    guard let deviceID = event.deviceID else { return }
 
     _activeProfiles.removeValue(forKey: deviceID)
 
@@ -111,10 +104,7 @@ public actor AppCoordinator {
       return
     }
 
-    let deviceID = Core.USBDeviceID(
-      vendorID: event.device.vendorID,
-      productID: event.device.productID
-    )
+    guard let deviceID = event.deviceID else { return }
 
     let profile = _activeProfiles[deviceID] ?? Profile.default
 
@@ -289,6 +279,16 @@ public actor AppCoordinator {
       continuation.onTermination = { @Sendable _ in
       }
     }
+  }
+}
+
+extension USBDeviceManager.USBDeviceEvent {
+  var deviceID: Core.USBDeviceID? {
+    guard let device = self.device else { return nil }
+    return Core.USBDeviceID(
+      vendorID: device.vendorID,
+      productID: device.productID
+    )
   }
 }
 
