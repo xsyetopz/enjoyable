@@ -31,7 +31,7 @@ struct EnjoyableCLI: AsyncParsableCommand {
 
   mutating func run() async throws {
     if verbose {
-      print("Enjoyable Gamepad Driver CLI v1.0.0")
+      print("OpenGamepadDriver CLI v1.0.0")
       print()
     }
   }
