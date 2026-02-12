@@ -37,46 +37,50 @@ public enum KeyCodeMapper {
     case "tab": return KeyCodeConstants.Special.tab
     case "escape", "esc": return KeyCodeConstants.Special.escape
     case "backspace", "delete": return KeyCodeConstants.Special.backspace
-    case "up": return 0x3E
-    case "down": return 0x3D
-    case "left": return 0x3B
-    case "right": return 0x3C
-    case "command", "cmd", "⌘": return 0x37
-    case "control", "ctrl", "⌃": return 0x3B
-    case "option", "opt", "alt", "⌥": return 0x3A
-    case "shift", "⇧": return 0x38
-    case "capslock", "caps": return 0x39
-    case "f1": return 0x7A
-    case "f2": return 0x78
-    case "f3": return 0x63
-    case "f4": return 0x76
-    case "f5": return 0x60
-    case "f6": return 0x61
-    case "f7": return 0x62
-    case "f8": return 0x64
-    case "f9": return 0x65
-    case "f10": return 0x6D
-    case "f11": return 0x67
-    case "f12": return 0x6F
-    case "f13": return 0x69
-    case "f14": return 0x6B
-    case "f15": return 0x71
-    case "f16": return 0x6A
-    case "f17": return 0x40
-    case "f18": return 0x4F
-    case "f19": return 0x42
-    case "home": return 0x73
-    case "end": return 0x77
-    case "pageup": return 0x74
-    case "pagedown": return 0x79
-    case "help": return 0x72
+    case "up": return KeyCodeConstants.Arrow.up
+    case "down": return KeyCodeConstants.Arrow.down
+    case "left": return KeyCodeConstants.Arrow.left
+    case "right": return KeyCodeConstants.Arrow.right
+    case "command", "cmd", "⌘": return KeyCodeConstants.Modifier.command
+    case "control", "ctrl", "⌃": return KeyCodeConstants.Modifier.control
+    case "option", "opt", "alt", "⌥": return KeyCodeConstants.Modifier.option
+    case "shift", "⇧": return KeyCodeConstants.Modifier.shift
+    case "capslock", "caps": return KeyCodeConstants.Modifier.capsLock
+    case "f1": return KeyCodeConstants.Function.f1
+    case "f2": return KeyCodeConstants.Function.f2
+    case "f3": return KeyCodeConstants.Function.f3
+    case "f4": return KeyCodeConstants.Function.f4
+    case "f5": return KeyCodeConstants.Function.f5
+    case "f6": return KeyCodeConstants.Function.f6
+    case "f7": return KeyCodeConstants.Function.f7
+    case "f8": return KeyCodeConstants.Function.f8
+    case "f9": return KeyCodeConstants.Function.f9
+    case "f10": return KeyCodeConstants.Function.f10
+    case "f11": return KeyCodeConstants.Function.f11
+    case "f12": return KeyCodeConstants.Function.f12
+    case "f13": return KeyCodeConstants.Function.f13
+    case "f14": return KeyCodeConstants.Function.f14
+    case "f15": return KeyCodeConstants.Function.f15
+    case "f16": return KeyCodeConstants.Function.f16
+    case "f17": return KeyCodeConstants.Function.f17
+    case "f18": return KeyCodeConstants.Function.f18
+    case "f19": return KeyCodeConstants.Function.f19
+    case "home": return KeyCodeConstants.Navigation.home
+    case "end": return KeyCodeConstants.Navigation.end
+    case "pageup": return KeyCodeConstants.Navigation.pageUp
+    case "pagedown": return KeyCodeConstants.Navigation.pageDown
+    case "help": return KeyCodeConstants.Navigation.help
     default: return KeyCodeConstants.unmapped
     }
   }
 
   public static func isModifierKey(_ keyCode: UInt16) -> Bool {
     switch keyCode {
-    case 0x37, 0x3B, 0x3A, 0x38, 0x39:
+    case KeyCodeConstants.Modifier.command,
+         KeyCodeConstants.Modifier.control,
+         KeyCodeConstants.Modifier.option,
+         KeyCodeConstants.Modifier.shift,
+         KeyCodeConstants.Modifier.capsLock:
       return true
     default:
       return false
