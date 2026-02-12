@@ -2,7 +2,9 @@
 set -e
 swift build
 mkdir -p .build/arm64-apple-macosx/debug/Enjoyable.app/Contents/MacOS
+mkdir -p .build/arm64-apple-macosx/debug/Enjoyable.app/Contents/Resources/Configurations
 cp .build/arm64-apple-macosx/debug/enjoyable .build/arm64-apple-macosx/debug/Enjoyable.app/Contents/MacOS/
+cp -R Resources/Configurations/* .build/arm64-apple-macosx/debug/Enjoyable.app/Contents/Resources/Configurations/
 cat >.build/arm64-apple-macosx/debug/Enjoyable.app/Contents/Info.plist <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
