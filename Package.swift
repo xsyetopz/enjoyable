@@ -25,7 +25,6 @@ let package = Package(
       name: "Core",
       dependencies: [],
       path: "Sources/Core",
-      resources: [],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("StrictConcurrency"),
@@ -37,7 +36,6 @@ let package = Package(
       name: "Configuration",
       dependencies: ["Core", .product(name: "Rainbow", package: "Rainbow")],
       path: "Sources/Configuration",
-      resources: [],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("StrictConcurrency"),
@@ -52,7 +50,6 @@ let package = Package(
       name: "Protocol",
       dependencies: ["Core", "LibUSB"],
       path: "Sources/Protocol",
-      resources: [],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("StrictConcurrency"),
@@ -64,7 +61,6 @@ let package = Package(
       name: "Output",
       dependencies: ["Core", "Configuration"],
       path: "Sources/Output",
-      resources: [],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("StrictConcurrency"),
@@ -81,7 +77,6 @@ let package = Package(
       name: "Infrastructure",
       dependencies: ["Core", "Configuration", "LibUSB"],
       path: "Sources/Infrastructure",
-      resources: [],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("StrictConcurrency"),
@@ -99,7 +94,6 @@ let package = Package(
         .product(name: "Rainbow", package: "Rainbow"),
       ],
       path: "Sources/Services",
-      resources: [],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("StrictConcurrency"),
@@ -113,7 +107,6 @@ let package = Package(
         "Core", "Configuration", "Services",
       ],
       path: "Sources/Application",
-      resources: [],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("StrictConcurrency"),
@@ -130,15 +123,9 @@ let package = Package(
       dependencies: [
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
         .product(name: "Rainbow", package: "Rainbow"),
-        "Core",
-        "Configuration",
-        "Protocol",
-        "Output",
-        "Services",
-        "Application",
+        "Core", "Configuration", "Protocol", "Output", "Services", "Application",
       ],
       path: "Sources/CLI",
-      resources: [],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("StrictConcurrency"),
@@ -159,13 +146,7 @@ let package = Package(
     .executableTarget(
       name: "GUI",
       dependencies: [
-        "Core",
-        "Configuration",
-        "Protocol",
-        "Output",
-        "Services",
-        "Application",
-        "Infrastructure",
+        "Core", "Configuration", "Protocol", "Output", "Services", "Application", "Infrastructure",
         "LibUSB",
       ],
       path: "Sources/GUI",
@@ -193,7 +174,6 @@ let package = Package(
         .target(name: "CLibUSB")
       ],
       path: "Modules/LibUSB/Sources/LibUSB",
-      resources: [],
       swiftSettings: [
         .swiftLanguageMode(.v6),
         .enableUpcomingFeature("StrictConcurrency"),
