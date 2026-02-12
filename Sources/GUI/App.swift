@@ -33,6 +33,7 @@ struct EnjoyableApp: App {
   init() {
     _ensureRunningFromAppBundle()
     SignalHandlers.setup()
+    SignalHandlers.setAppState(_appState)
   }
 
   var body: some Scene {

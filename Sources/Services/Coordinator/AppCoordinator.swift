@@ -40,6 +40,11 @@ public actor AppCoordinator {
 
   public func stop() async {
     try? await _outputService.releaseAllInputs()
+
+    let virtualDeviceIDs = await _outputService.getAllVirtualDeviceIDs()
+    for deviceID in virtualDeviceIDs {
+      try? await _outputService.destroyVirtualDevice(for: deviceID)
+    }
   }
 
   public func handleDeviceEvent(_ event: USBDeviceManager.USBDeviceEvent) async {

@@ -6,6 +6,7 @@ import Services
 @MainActor
 enum SignalHandlers {
   fileprivate static nonisolated(unsafe) var _sharedUSBDeviceServiceRef: USBService?
+  fileprivate static nonisolated(unsafe) var _appStateRef: AppState?
 
   static func setup() {
     signal(SIGINT) { _ in
@@ -34,10 +35,18 @@ enum SignalHandlers {
   static func setService(_ service: USBService?) {
     _sharedUSBDeviceServiceRef = service
   }
+
+  static func setAppState(_ appState: AppState?) {
+    _appStateRef = appState
+  }
 }
 
 @MainActor
 private func _cleanupAndExit() async {
+  if let appState = SignalHandlers._appStateRef {
+    await appState.stop()
+  }
+
   if let service = SignalHandlers._sharedUSBDeviceServiceRef {
     let devices = await service.getConnectedDevices()
     for device in devices {

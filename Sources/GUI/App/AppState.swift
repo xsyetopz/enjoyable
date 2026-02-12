@@ -600,6 +600,10 @@ final class AppState: ObservableObject {
       selectedTab = .mapping
     }
   }
+
+  func stop() async {
+    await _appCoordinator?.stop()
+  }
 }
 
 enum MainTab: String, CaseIterable {

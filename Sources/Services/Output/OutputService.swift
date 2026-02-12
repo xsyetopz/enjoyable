@@ -52,13 +52,20 @@ public actor OutputService {
     guard let virtualHIDService = _virtualHIDService else {
       throw OutputServiceError.virtualHIDNotAvailable
     }
-    
+
     guard let deviceUUID = _virtualDeviceIDs.removeValue(forKey: deviceID) else {
       throw OutputServiceError.deviceNotFound
     }
-    
+
+    try await virtualHIDService.sendOutputReport(
+      deviceID: deviceUUID,
+      leftMotor: 0,
+      rightMotor: 0,
+      ledPattern: .off
+    )
+
     try await virtualHIDService.destroyVirtualGamepad(deviceID: deviceUUID)
-    
+
     let event = OutputServiceEvent(
       type: .virtualDeviceDestroyed,
       deviceID: deviceID
@@ -394,6 +401,10 @@ public actor OutputService {
   public func getInputState(identifier: String, for deviceID: Core.USBDeviceID) -> Bool {
     let key = deviceID.stringValue + "_" + identifier
     return _activeInputs[key] ?? false
+  }
+
+  public func getAllVirtualDeviceIDs() -> [Core.USBDeviceID] {
+    Array(_virtualDeviceIDs.keys)
   }
 }
 
