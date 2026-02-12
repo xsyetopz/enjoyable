@@ -199,12 +199,12 @@ final class AppState: ObservableObject {
       if let parsedInput = event.input {
         _updateButtonStatesFromParsedInput(parsedInput)
         NSLog("[AppState] Input parsed for device: \(parsedInput.deviceID.stringValue)")
-        
+
         if let profile = currentProfile {
           _routeInputThroughProfileMappings(parsedInput, profile: profile)
         }
       }
-      
+
     case .routingError:
       NSLog("[AppState] Input routing error")
     }
@@ -212,18 +212,23 @@ final class AppState: ObservableObject {
 
   private func _updateButtonStatesFromParsedInput(_ parsedInput: InputRouter.ParsedInput) {
     var newStates = buttonStates
-    
+
     for input in parsedInput.inputs {
       let buttonName = input.buttonIdentifier
       newStates[buttonName] = input.isPressed
     }
-    
+
     buttonStates = newStates
   }
 
-  private func _routeInputThroughProfileMappings(_ parsedInput: InputRouter.ParsedInput, profile: Profile) {
+  private func _routeInputThroughProfileMappings(
+    _ parsedInput: InputRouter.ParsedInput,
+    profile: Profile
+  ) {
     for input in parsedInput.inputs {
-      if let mapping = profile.buttonMappings.first(where: { $0.buttonIdentifier == input.buttonIdentifier }) {
+      if let mapping = profile.buttonMappings.first(where: {
+        $0.buttonIdentifier == input.buttonIdentifier
+      }) {
         NSLog("[AppState] Mapped \(input.buttonIdentifier) to keyCode: \(mapping.keyCode)")
       }
     }
@@ -233,27 +238,44 @@ final class AppState: ObservableObject {
     switch event.type {
     case .keyDown:
       NSLog("[AppState] Key down: \(event.keyCode ?? 0)")
-      
     case .keyUp:
       NSLog("[AppState] Key up: \(event.keyCode ?? 0)")
-      
     case .mouseClick:
       NSLog("[AppState] Mouse click: \(event.mouseButton?.rawValue ?? 0)")
-      
     case .mouseScroll:
       NSLog("[AppState] Mouse scroll: \(event.scrollDeltaX ?? 0), \(event.scrollDeltaY ?? 0)")
-      
     case .mouseMove:
       NSLog("[AppState] Mouse move: \(event.scrollDeltaX ?? 0), \(event.scrollDeltaY ?? 0)")
-      
     case .allReleased:
       NSLog("[AppState] All inputs released")
-      
     case .deviceReleased:
       NSLog("[AppState] Device released: \(event.deviceID?.stringValue ?? "unknown")")
-      
     case .outputError:
       NSLog("[AppState] Output error occurred")
+    case .buttonDown:
+      NSLog("[AppState] Button down: \(event.buttonID?.displayName ?? "unknown")")
+    case .buttonUp:
+      NSLog("[AppState] Button up: \(event.buttonID?.displayName ?? "unknown")")
+    case .axisMoved:
+      NSLog(
+        "[AppState] Axis moved: \(event.axisID?.displayName ?? "unknown") = \(event.axisValue ?? 0)"
+      )
+    case .triggerMoved:
+      NSLog(
+        "[AppState] Trigger moved: \(event.triggerID?.displayName ?? "unknown") = \(event.triggerValue ?? 0)"
+      )
+    case .dpadMoved:
+      let h = event.dpadHorizontal.map { String(describing: $0) } ?? "neutral"
+      let v = event.dpadVertical.map { String(describing: $0) } ?? "neutral"
+      NSLog("[AppState] D-pad moved: h=\(h), v=\(v)")
+    case .rumbleSent:
+      NSLog("[AppState] Rumble sent: left=\(event.leftMotor ?? 0), right=\(event.rightMotor ?? 0)")
+    case .ledSent:
+      NSLog("[AppState] LED pattern sent")
+    case .virtualDeviceCreated:
+      NSLog("[AppState] Virtual device created")
+    case .virtualDeviceDestroyed:
+      NSLog("[AppState] Virtual device destroyed")
     }
   }
 
@@ -266,7 +288,6 @@ final class AppState: ObservableObject {
           self.currentProfile = profile
         }
       }
-      
     case .profileSwitched:
       if let profile = event.profile {
         NSLog("[AppState] Profile switched to: \(profile.name)")
@@ -274,7 +295,6 @@ final class AppState: ObservableObject {
           self.currentProfile = profile
         }
       }
-      
     case .profileSaved:
       if let profile = event.profile {
         NSLog("[AppState] Profile saved: \(profile.name)")
@@ -284,7 +304,6 @@ final class AppState: ObservableObject {
           }
         }
       }
-      
     case .profileDeleted:
       if let profileName = event.profileName {
         NSLog("[AppState] Profile deleted: \(profileName)")
@@ -295,7 +314,6 @@ final class AppState: ObservableObject {
           }
         }
       }
-      
     case .profileError:
       NSLog("[AppState] Profile error occurred")
       Task { @MainActor in
