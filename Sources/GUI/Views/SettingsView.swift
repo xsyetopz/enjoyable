@@ -77,12 +77,12 @@ struct SettingsView: View {
           HStack(spacing: 0) {
             ForEach(AppearanceMode.allCases) { mode in
               Button(action: {
-                viewModel.setAppearanceMode(mode)
+                 viewModel.setAppearanceMode(mode)
               }) {
                 Text(mode.displayName)
                   .font(.caption)
-                  .fontWeight(viewModel.appearanceMode == mode ? .semibold : .regular)
-                  .foregroundColor(viewModel.appearanceMode == mode ? .primary : .secondary)
+                   .fontWeight(viewModel.appearanceMode == mode ? .semibold : .regular)
+                   .foregroundColor(viewModel.appearanceMode == mode ? .primary : .secondary)
                   .padding(.horizontal, 12)
                   .padding(.vertical, 6)
                   .background(

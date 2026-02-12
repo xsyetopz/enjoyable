@@ -10,16 +10,35 @@ final class DevicesViewModel: ObservableObject {
   @Published var selectedDevice: GamepadDevice?
   @Published var isRefreshing: Bool = false
   @Published var errorMessage: String?
+  @Published var showingDeviceConfiguration: Bool = false
+  @Published var deviceToConfigure: GamepadDevice?
 
-  private var _refreshTimer: Timer?
+  private var _cancellables = Set<AnyCancellable>()
   private var _usbDeviceService: USBService?
+  private weak var _appState: AppState?
 
   init() {
-    _startAutoRefresh()
+    if let service = sharedUSBDeviceService {
+      self._usbDeviceService = service
+    }
+  }
+
+  func setAppState(_ appState: AppState) {
+    self._appState = appState
+    _observeDeviceChanges(appState)
   }
 
   func setUSBDeviceService(_ service: USBService) {
     self._usbDeviceService = service
+  }
+
+  private func _observeDeviceChanges(_ appState: AppState) {
+    appState.$connectedDevices
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] devices in
+        self?.devices = devices
+      }
+      .store(in: &_cancellables)
   }
 
   func refreshDevices() async {
@@ -27,21 +46,15 @@ final class DevicesViewModel: ObservableObject {
     errorMessage = nil
 
     do {
-      if let service = _usbDeviceService {
+      let service = _usbDeviceService ?? sharedUSBDeviceService
+      if let service = service {
         await service.startScanning()
-        devices = await service.getConnectedDevices()
+        let connectedDevices = await service.getConnectedDevices()
+        devices = connectedDevices
       }
     }
 
     isRefreshing = false
-  }
-
-  private func _startAutoRefresh() {
-    _refreshTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-      Task { @MainActor [weak self] in
-        await self?.refreshDevices()
-      }
-    }
   }
 
   func selectDevice(_ device: GamepadDevice) {
@@ -50,6 +63,13 @@ final class DevicesViewModel: ObservableObject {
 
   func configureDevice(_ device: GamepadDevice) {
     selectedDevice = device
+    deviceToConfigure = device
+    showingDeviceConfiguration = true
+  }
+
+  func dismissDeviceConfiguration() {
+    showingDeviceConfiguration = false
+    deviceToConfigure = nil
   }
 
   func deviceCount(for state: ConnectionState) -> Int {

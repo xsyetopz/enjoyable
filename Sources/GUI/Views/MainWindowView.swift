@@ -24,6 +24,9 @@ struct MainWindowView: View {
     .sheet(isPresented: $appState.showAboutPanel) {
       AboutPanelView()
     }
+    .onAppear {
+      _devicesViewModel.setAppState(appState)
+    }
   }
 
   private var _tabBarView: some View {

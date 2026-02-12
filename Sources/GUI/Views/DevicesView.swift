@@ -17,6 +17,13 @@ struct DevicesView: View {
       }
       .padding(24)
     }
+    .sheet(isPresented: $viewModel.showingDeviceConfiguration) {
+      if let device = viewModel.deviceToConfigure {
+        DeviceConfigurationView(device: device) {
+          viewModel.dismissDeviceConfiguration()
+        }
+      }
+    }
   }
 
   private var _headerView: some View {

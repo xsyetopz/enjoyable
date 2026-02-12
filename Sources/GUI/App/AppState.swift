@@ -17,6 +17,9 @@ final class AppState: ObservableObject {
   @Published var startAtLogin: Bool = false
   @Published var showNotifications: Bool = true
   @Published var minimizeToTray: Bool = true
+  @Published var deviceRefreshRate: Double = 0.1
+  @Published var autoConnect: Bool = true
+  @Published var showDebugInfo: Bool = false
   @Published var isLoading: Bool = false
   @Published var errorMessage: String?
   @Published var buttonStates: [String: Bool] = [:]
@@ -437,6 +440,12 @@ final class AppState: ObservableObject {
       ) ?? .system
     showNotifications = defaults.bool(forKey: "showNotifications")
     minimizeToTray = defaults.bool(forKey: "minimizeToTray")
+    deviceRefreshRate = defaults.double(forKey: "deviceRefreshRate")
+    if deviceRefreshRate == 0 {
+      deviceRefreshRate = 0.1
+    }
+    autoConnect = defaults.bool(forKey: "autoConnect")
+    showDebugInfo = defaults.bool(forKey: "showDebugInfo")
   }
 
   func saveSettings() {
@@ -444,6 +453,9 @@ final class AppState: ObservableObject {
     defaults.set(appearanceMode.rawValue, forKey: "appearanceMode")
     defaults.set(showNotifications, forKey: "showNotifications")
     defaults.set(minimizeToTray, forKey: "minimizeToTray")
+    defaults.set(deviceRefreshRate, forKey: "deviceRefreshRate")
+    defaults.set(autoConnect, forKey: "autoConnect")
+    defaults.set(showDebugInfo, forKey: "showDebugInfo")
   }
 
   func refreshDevices() async {
@@ -546,6 +558,36 @@ final class AppState: ObservableObject {
         }
       }
     }
+  }
+
+  func setAppearanceMode(_ mode: AppearanceMode) {
+    appearanceMode = mode
+    saveSettings()
+  }
+
+  func setShowNotifications(_ enabled: Bool) {
+    showNotifications = enabled
+    saveSettings()
+  }
+
+  func setMinimizeToTray(_ enabled: Bool) {
+    minimizeToTray = enabled
+    saveSettings()
+  }
+
+  func setDeviceRefreshRate(_ rate: Double) {
+    deviceRefreshRate = rate
+    saveSettings()
+  }
+
+  func setAutoConnect(_ enabled: Bool) {
+    autoConnect = enabled
+    saveSettings()
+  }
+
+  func setShowDebugInfo(_ enabled: Bool) {
+    showDebugInfo = enabled
+    saveSettings()
   }
 
   func dismissError() {

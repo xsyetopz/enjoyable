@@ -8,6 +8,7 @@ struct ProfileView: View {
   @State private var _newProfileName = ""
   @State private var _showingDeleteConfirmation = false
   @State private var _profileToDelete: Profile?
+  @State private var _exportedURL: URL?
 
   var body: some View {
     ScrollView {
@@ -64,8 +65,10 @@ struct ProfileView: View {
 
       HStack(spacing: 12) {
         Button(action: {
-          Task {
-            await viewModel.saveCurrentProfile()
+          if let profile = viewModel.currentProfile,
+             let url = viewModel.exportProfile(profile) {
+            _exportedURL = url
+            NSWorkspace.shared.activateFileViewerSelecting([url])
           }
         }) {
           Label("Export", systemImage: "square.and.arrow.up")
