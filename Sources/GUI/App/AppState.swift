@@ -203,19 +203,19 @@ final class AppState: ObservableObject {
       {
         connectedDevices.append(device)
         NSLog(
-          "AppState: Detected new device - VendorID: \(device.vendorID), ProductID: \(device.productID)"
+          "[AppState] Detected new device - VendorID: \(device.vendorID), ProductID: \(device.productID)"
         )
         Task {
           do {
             guard let service = self._usbDeviceService else {
-              NSLog("AppState: ERROR - _usbDeviceService is nil!")
+              NSLog("[AppState] ERROR - _usbDeviceService is nil!")
               return
             }
-            NSLog("AppState: Calling connect()...")
+            NSLog("[AppState] Calling connect()...")
             let connectedDevice = try await service.connect(
               deviceID: Core.USBDeviceID(vendorID: device.vendorID, productID: device.productID)
             )
-            NSLog("AppState: Device connected successfully")
+            NSLog("[AppState] Device connected successfully")
             await MainActor.run {
               var devices = self.connectedDevices
               if let index = devices.firstIndex(where: {
@@ -226,7 +226,7 @@ final class AppState: ObservableObject {
               }
             }
           } catch {
-            NSLog("AppState: Failed to connect to device: \(error)")
+            NSLog("[AppState] Failed to connect to device: \(error)")
           }
         }
       }

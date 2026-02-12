@@ -88,7 +88,7 @@ public final class ConfigurationMatcher {
         _protocolCache?[config.protocolType] = config
       }
     } catch {
-      NSLog("Failed to cache configurations: \(error)")
+      NSLog("[ConfigurationMatcher] Failed to cache configurations: \(error)")
     }
   }
 
@@ -136,6 +136,7 @@ public final class ConfigurationMatcher {
         }
       }
     } catch {
+      NSLog("[ConfigurationMatcher] Failed to find all matching configurations: \(error)")
       return []
     }
 

@@ -26,6 +26,8 @@ public actor MouseService {
   }
 
   public func postMouseButtonUp(button: CGEventAdapter.MouseButton) async throws {
-    NSLog("Mouse button up event is handled implicitly by the adapter, no action needed.")
+    NSLog(
+      "[MouseService] Mouse button upevent is handled implicitly; no explicit action needed."
+    )
   }
 }

@@ -68,7 +68,7 @@ extension LibUSBAdapterError {
     case .noDevicesFound:
       return USBError.scanFailed(underlyingError: "No USB devices found")
     case .initializationFailed(let reason):
-      NSLog("Initialization failed: \(reason)")
+      NSLog("[LibUSBAdapter] Initialization failed: \(reason)")
       return USBError.configurationError(
         deviceName: deviceName ?? "Unknown Device",
         configurationNumber: 0
@@ -116,7 +116,7 @@ public actor LibUSBAdapter {
   }
 
   public func connect(deviceID: LibUSB.USBDeviceID) async throws -> Core.GamepadDevice {
-    NSLog("LibUSBAdapter.connect() called for \(deviceID.vendorID):\(deviceID.productID)")
+    NSLog("[LibUSBAdapter] connect() called for \(deviceID.vendorID):\(deviceID.productID)")
     var device: LibUSB.USBDevice?
 
     if let cachedDevice = _deviceCache[deviceID] {
@@ -126,13 +126,13 @@ public actor LibUSBAdapter {
     }
 
     guard let foundDevice = device else {
-      NSLog("Device not found in cache or USB scan")
+      NSLog("[LibUSBAdapter] Device not found in cache or USB scan")
       throw LibUSBAdapterError.usbError(.noDevice)
     }
 
-    NSLog("Found device, attempting to open...")
+    NSLog("[LibUSBAdapter] Found device, attempting to open...")
     let handle = try foundDevice.open()
-    NSLog("Device opened successfully")
+    NSLog("[LibUSBAdapter] Device opened successfully")
     _connectedDevices[deviceID] = handle
     _deviceCache[deviceID] = foundDevice
 
@@ -188,21 +188,23 @@ public actor LibUSBAdapter {
     )
 
     if config == nil {
-      NSLog("No configuration found for device \(deviceID.vendorID):\(deviceID.productID)")
+      NSLog(
+        "[LibUSBAdapter] No configuration found for device \(deviceID.vendorID):\(deviceID.productID)"
+      )
     } else {
       NSLog(
-        "Found config: \(config?.device.name ?? "unknown"), init steps: \(config?.initialization.count ?? 0)"
+        "[LibUSBAdapter] Found config: \(config?.device.name ?? "unknown"), init steps: \(config?.initialization.count ?? 0)"
       )
     }
 
     if let initialization = config?.initialization {
       for (index, step) in initialization.enumerated() {
-        NSLog("Executing init step \(index): \(step.description)")
+        NSLog("[LibUSBAdapter] Executing init step \(index): \(step.description)")
         do {
           try await _executeInitStep(step, handle: handle, device: device)
-          NSLog("Step \(index) completed")
+          NSLog("[LibUSBAdapter] Step \(index) completed")
         } catch {
-          NSLog("Step \(index) failed: \(error)")
+          NSLog("[LibUSBAdapter] Step \(index) failed: \(error)")
           throw error
         }
       }
@@ -236,7 +238,7 @@ public actor LibUSBAdapter {
         }
       }
     } catch {
-      NSLog("Failed to get active configuration descriptor: \(error)")
+      NSLog("[LibUSBAdapter] Failed to get active configuration descriptor: \(error)")
     }
 
     return 0x02
@@ -293,7 +295,7 @@ public actor LibUSBAdapter {
       if let dataBytes = step.dataBytes {
         let endpoint = _findGIPOutEndpoint(device: device)
         NSLog(
-          "LibUSB: Sending GIP packet to endpoint 0x%02X: %@",
+          "[LibUSBAdapter] Sending GIP packet to endpoint 0x%02X: %@",
           endpoint,
           dataBytes.map { String(format: "%02X", $0) }.joined()
         )
@@ -302,7 +304,7 @@ public actor LibUSBAdapter {
           data: [UInt8](dataBytes),
           timeout: timeout
         )
-        NSLog("LibUSB: GIP packet sent")
+        NSLog("[LibUSBAdapter] GIP packet sent")
       }
     }
 
@@ -391,6 +393,7 @@ public actor LibUSBAdapter {
         timeout: LibUSB.Config.Timeout.interruptTransfer
       )
     } catch {
+      NSLog("[LibUSBAdapter] Failed to send GIP LED off packet: \(error)")
     }
   }
 
@@ -435,6 +438,7 @@ public actor LibUSBAdapter {
         }
       }
     } catch {
+      NSLog("[LibUSBAdapter] Failed to get active configuration descriptor: \(error)")
     }
 
     return 0x81
@@ -472,6 +476,7 @@ public actor LibUSBAdapter {
         }
       }
     } catch {
+      NSLog("[LibUSBAdapter] Failed to get active configuration descriptor: \(error)")
     }
 
     return 0x01

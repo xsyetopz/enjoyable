@@ -65,7 +65,7 @@ final class SettingsViewModel: ObservableObject {
             try await LoginItemsService(bundleIdentifier: bundleID).disableStartAtLogin()
           }
         } catch {
-          NSLog("Failed to update login item: \(error)")
+          NSLog("[SettingsViewModel] Failed to update login item: \(error)")
         }
       }
     }
