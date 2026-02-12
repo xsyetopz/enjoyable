@@ -41,14 +41,34 @@ public final class XInputParser: @unchecked Sendable {
       return events
     }
 
-    _parseButton(&events, bit: 0x01, buttonID: .a, stateIndex: -1)
-    _parseButton(&events, bit: 0x02, buttonID: .b, stateIndex: -2)
-    _parseButton(&events, bit: 0x04, buttonID: .x, stateIndex: -3)
-    _parseButton(&events, bit: 0x08, buttonID: .y, stateIndex: -4)
-    _parseButton(&events, bit: 0x10, buttonID: .leftShoulder, stateIndex: -5)
-    _parseButton(&events, bit: 0x20, buttonID: .rightShoulder, stateIndex: -6)
-    _parseButton(&events, bit: 0x40, buttonID: .back, stateIndex: -7)
-    _parseButton(&events, bit: 0x80, buttonID: .start, stateIndex: -8)
+    _parseButton(&events, bit: ReportFormatConstants.ButtonMasks.a, buttonID: .a, stateIndex: -1)
+    _parseButton(&events, bit: ReportFormatConstants.ButtonMasks.b, buttonID: .b, stateIndex: -2)
+    _parseButton(&events, bit: ReportFormatConstants.ButtonMasks.x, buttonID: .x, stateIndex: -3)
+    _parseButton(&events, bit: ReportFormatConstants.ButtonMasks.y, buttonID: .y, stateIndex: -4)
+    _parseButton(
+      &events,
+      bit: ReportFormatConstants.ButtonMasks.leftShoulder,
+      buttonID: .leftShoulder,
+      stateIndex: -5
+    )
+    _parseButton(
+      &events,
+      bit: ReportFormatConstants.ButtonMasks.rightShoulder,
+      buttonID: .rightShoulder,
+      stateIndex: -6
+    )
+    _parseButton(
+      &events,
+      bit: ReportFormatConstants.ButtonMasks.back,
+      buttonID: .back,
+      stateIndex: -7
+    )
+    _parseButton(
+      &events,
+      bit: ReportFormatConstants.ButtonMasks.start,
+      buttonID: .start,
+      stateIndex: -8
+    )
 
     _parseTrigger(&events, rawValue: leftTrigger, triggerID: .left, stateIndex: -1)
     _parseTrigger(&events, rawValue: rightTrigger, triggerID: .right, stateIndex: -2)
