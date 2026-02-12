@@ -5,21 +5,20 @@ struct MappingListView: View {
   let buttons: [String]
   let selectedButton: String?
   let recordingButton: String?
-  let searchText: String
   let onSelect: (String) -> Void
   let onEdit: (String) -> Void
 
-  @EnvironmentObject var appState: AppState
+  @EnvironmentObject var viewModel: MappingViewModel
 
   private var _filteredButtons: [String] {
-    if searchText.isEmpty {
+    if viewModel.searchText.isEmpty {
       return buttons
     }
-    return buttons.filter { $0.localizedCaseInsensitiveContains(searchText) }
+    return buttons.filter { $0.localizedCaseInsensitiveContains(viewModel.searchText) }
   }
 
   private var _mappedButtons: Set<String> {
-    Set(appState.currentProfile?.buttonMappings.map { $0.buttonIdentifier } ?? [])
+    Set(viewModel.currentProfile?.buttonMappings.map { $0.buttonIdentifier } ?? [])
   }
 
   var body: some View {
@@ -41,13 +40,12 @@ struct MappingListView: View {
       Image(systemName: "magnifyingglass")
         .foregroundColor(.secondary)
 
-      TextField("Search buttons", text: .constant(searchText))
+      TextField("Search buttons", text: $viewModel.searchText)
         .textFieldStyle(.plain)
         .font(.system(size: 13))
-        .disabled(true)
 
-      if !searchText.isEmpty {
-        Button(action: {}) {
+      if !viewModel.searchText.isEmpty {
+        Button(action: { viewModel.searchText = "" }) {
           Image(systemName: "xmark.circle.fill")
             .foregroundColor(.secondary)
         }
@@ -121,7 +119,7 @@ struct MappingListView: View {
   }
 
   private func _mapping(for button: String) -> ButtonMapping? {
-    appState.currentProfile?.buttonMappings.first { $0.buttonIdentifier == button }
+    viewModel.currentProfile?.buttonMappings.first { $0.buttonIdentifier == button }
   }
 }
 
@@ -131,11 +129,10 @@ struct MappingListView_Previews: PreviewProvider {
       buttons: GamepadConstants.Button.allNames,
       selectedButton: nil,
       recordingButton: nil,
-      searchText: "",
       onSelect: { _ in },
       onEdit: { _ in }
     )
-    .environmentObject(AppState())
+    .environmentObject(MappingViewModel())
     .frame(width: 320, height: 400)
     .padding()
   }

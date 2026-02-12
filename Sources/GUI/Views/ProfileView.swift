@@ -3,7 +3,7 @@ import Core
 import SwiftUI
 
 struct ProfileView: View {
-  @EnvironmentObject var appState: AppState
+  @EnvironmentObject var viewModel: ProfileViewModel
   @State private var _showingNewProfileSheet = false
   @State private var _newProfileName = ""
   @State private var _showingDeleteConfirmation = false
@@ -14,13 +14,13 @@ struct ProfileView: View {
       VStack(spacing: 24) {
         _profileListHeader
 
-        if appState.profiles.isEmpty {
+        if viewModel.profiles.isEmpty {
           _emptyProfilesView
         } else {
           _profileListView
         }
 
-        if let currentProfile = appState.currentProfile {
+        if let currentProfile = viewModel.currentProfile {
           _currentProfileEditor(currentProfile)
         }
       }
@@ -36,13 +36,16 @@ struct ProfileView: View {
       Button("Delete", role: .destructive) {
         if let profile = _profileToDelete {
           Task {
-            await appState.deleteProfile(profile)
+            await viewModel.deleteProfile(profile)
           }
         }
         _profileToDelete = nil
       }
     } message: {
       Text("Are you sure you want to delete this profile? This action cannot be undone.")
+    }
+    .task {
+      await viewModel.loadConnectedDevices()
     }
   }
 
@@ -52,7 +55,7 @@ struct ProfileView: View {
         Text("Profiles")
           .font(.title2.bold())
 
-        Text("\(appState.profiles.count) profile\(appState.profiles.count == 1 ? "" : "s")")
+        Text("\(viewModel.profiles.count) profile\(viewModel.profiles.count == 1 ? "" : "s")")
           .font(.subheadline)
           .foregroundColor(.secondary)
       }
@@ -62,7 +65,7 @@ struct ProfileView: View {
       HStack(spacing: 12) {
         Button(action: {
           Task {
-            await appState.saveCurrentProfile()
+            await viewModel.saveCurrentProfile()
           }
         }) {
           Label("Export", systemImage: "square.and.arrow.up")
@@ -109,12 +112,12 @@ struct ProfileView: View {
 
   private var _profileListView: some View {
     LazyVStack(spacing: 12) {
-      ForEach(appState.profiles) { profile in
+      ForEach(viewModel.profiles) { profile in
         ProfileRowView(
           profile: profile,
-          isActive: appState.currentProfile?.id == profile.id,
+          isActive: viewModel.currentProfile?.id == profile.id,
           onSelect: {
-            appState.selectProfile(profile)
+            viewModel.selectProfile(profile)
           },
           onDelete: {
             _profileToDelete = profile
@@ -141,9 +144,9 @@ struct ProfileView: View {
             text: Binding(
               get: { profile.name },
               set: { newName in
-                if var updatedProfile = appState.currentProfile {
+                if var updatedProfile = viewModel.currentProfile {
                   updatedProfile = updatedProfile.withName(newName)
-                  appState.selectProfile(updatedProfile)
+                  viewModel.selectProfile(updatedProfile)
                 }
               }
             )
@@ -160,20 +163,20 @@ struct ProfileView: View {
             "Device",
             selection: Binding(
               get: {
-                appState.selectedDevice.map {
+                viewModel.selectedDevice.map {
                   USBDeviceID(vendorID: $0.vendorID, productID: $0.productID)
                 }
               },
               set: { newDeviceID in
-                if var updatedProfile = appState.currentProfile {
+                if var updatedProfile = viewModel.currentProfile {
                   updatedProfile = updatedProfile.withDeviceID(newDeviceID)
-                  appState.selectProfile(updatedProfile)
+                  viewModel.selectProfile(updatedProfile)
                 }
               }
             )
           ) {
             Text("All Devices").tag(nil as USBDeviceID?)
-            ForEach(appState.connectedDevices, id: \.vendorID) { device in
+            ForEach(viewModel.connectedDevices, id: \.vendorID) { device in
               Text(device.deviceName).tag(
                 USBDeviceID(vendorID: device.vendorID, productID: device.productID) as USBDeviceID?
               )
@@ -188,7 +191,7 @@ struct ProfileView: View {
 
         Button(action: {
           Task {
-            await appState.saveCurrentProfile()
+            await viewModel.saveCurrentProfile()
           }
         }) {
           Label("Save Profile", systemImage: "square.and.arrow.down")
@@ -220,12 +223,12 @@ struct ProfileView: View {
         Button("Create") {
           let newProfile = Profile(
             name: _newProfileName.isEmpty
-              ? "Profile \(appState.profiles.count + 1)" : _newProfileName,
+              ? "Profile \(viewModel.profiles.count + 1)" : _newProfileName,
             deviceID: nil,
             buttonMappings: []
           )
-          appState.profiles.append(newProfile)
-          appState.selectProfile(newProfile)
+          viewModel.profiles.append(newProfile)
+          viewModel.selectProfile(newProfile)
           _showingNewProfileSheet = false
           _newProfileName = ""
         }

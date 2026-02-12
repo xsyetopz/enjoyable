@@ -8,11 +8,11 @@ struct ButtonMappingRow: View {
   let isRecording: Bool
   let onEdit: () -> Void
 
-  @EnvironmentObject var _appState: AppState
+  @EnvironmentObject var viewModel: MappingViewModel
   @State private var _isHovered = false
 
   private var _isPressed: Bool {
-    _appState.buttonStates[button] ?? false
+    viewModel.buttonStates[button] ?? false
   }
 
   var body: some View {

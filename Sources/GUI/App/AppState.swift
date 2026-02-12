@@ -129,10 +129,22 @@ final class AppState: ObservableObject {
   private func _startRealInputListening(service: USBService) {
     do {
       let profileStore = ProfileStore()
-      let inputRouter = InputRouter { _ in }
+      let inputRouter = InputRouter { [weak self] event in
+        Task { @MainActor in
+          self?._handleInputEvent(event)
+        }
+      }
       let cgAdapter = try CGEventAdapter()
-      let outputService = OutputService(cgEventAdapter: cgAdapter) { _ in }
-      let profileService = ProfileService(profileStore: profileStore) { _ in }
+      let outputService = OutputService(cgEventAdapter: cgAdapter) { [weak self] event in
+        Task { @MainActor in
+          self?._handleOutputEvent(event)
+        }
+      }
+      let profileService = ProfileService(profileStore: profileStore) { [weak self] event in
+        Task { @MainActor in
+          self?._handleProfileEvent(event)
+        }
+      }
       let appCoordinator: AppCoordinator
       do {
         let libUSBAdapter = try LibUSBAdapter()
@@ -178,6 +190,117 @@ final class AppState: ObservableObject {
     switch event.type {
     case .deviceConnected, .deviceDisconnected, .inputProcessed, .profileChanged, .deviceError:
       break
+    }
+  }
+
+  private func _handleInputEvent(_ event: InputRouter.InputRouterEvent) {
+    switch event.type {
+    case .inputParsed:
+      if let parsedInput = event.input {
+        _updateButtonStatesFromParsedInput(parsedInput)
+        NSLog("[AppState] Input parsed for device: \(parsedInput.deviceID.stringValue)")
+        
+        if let profile = currentProfile {
+          _routeInputThroughProfileMappings(parsedInput, profile: profile)
+        }
+      }
+      
+    case .routingError:
+      NSLog("[AppState] Input routing error")
+    }
+  }
+
+  private func _updateButtonStatesFromParsedInput(_ parsedInput: InputRouter.ParsedInput) {
+    var newStates = buttonStates
+    
+    for input in parsedInput.inputs {
+      let buttonName = input.buttonIdentifier
+      newStates[buttonName] = input.isPressed
+    }
+    
+    buttonStates = newStates
+  }
+
+  private func _routeInputThroughProfileMappings(_ parsedInput: InputRouter.ParsedInput, profile: Profile) {
+    for input in parsedInput.inputs {
+      if let mapping = profile.buttonMappings.first(where: { $0.buttonIdentifier == input.buttonIdentifier }) {
+        NSLog("[AppState] Mapped \(input.buttonIdentifier) to keyCode: \(mapping.keyCode)")
+      }
+    }
+  }
+
+  private func _handleOutputEvent(_ event: OutputService.OutputServiceEvent) {
+    switch event.type {
+    case .keyDown:
+      NSLog("[AppState] Key down: \(event.keyCode ?? 0)")
+      
+    case .keyUp:
+      NSLog("[AppState] Key up: \(event.keyCode ?? 0)")
+      
+    case .mouseClick:
+      NSLog("[AppState] Mouse click: \(event.mouseButton?.rawValue ?? 0)")
+      
+    case .mouseScroll:
+      NSLog("[AppState] Mouse scroll: \(event.scrollDeltaX ?? 0), \(event.scrollDeltaY ?? 0)")
+      
+    case .mouseMove:
+      NSLog("[AppState] Mouse move: \(event.scrollDeltaX ?? 0), \(event.scrollDeltaY ?? 0)")
+      
+    case .allReleased:
+      NSLog("[AppState] All inputs released")
+      
+    case .deviceReleased:
+      NSLog("[AppState] Device released: \(event.deviceID?.stringValue ?? "unknown")")
+      
+    case .outputError:
+      NSLog("[AppState] Output error occurred")
+    }
+  }
+
+  private func _handleProfileEvent(_ event: ProfileService.ProfileServiceEvent) {
+    switch event.type {
+    case .initialized:
+      if let profile = event.profile {
+        NSLog("[AppState] Profile service initialized: \(profile.name)")
+        Task { @MainActor in
+          self.currentProfile = profile
+        }
+      }
+      
+    case .profileSwitched:
+      if let profile = event.profile {
+        NSLog("[AppState] Profile switched to: \(profile.name)")
+        Task { @MainActor in
+          self.currentProfile = profile
+        }
+      }
+      
+    case .profileSaved:
+      if let profile = event.profile {
+        NSLog("[AppState] Profile saved: \(profile.name)")
+        Task { @MainActor in
+          if let index = self.profiles.firstIndex(where: { $0.name == profile.name }) {
+            self.profiles[index] = profile
+          }
+        }
+      }
+      
+    case .profileDeleted:
+      if let profileName = event.profileName {
+        NSLog("[AppState] Profile deleted: \(profileName)")
+        Task { @MainActor in
+          self.profiles.removeAll { $0.name == profileName }
+          if self.currentProfile?.name == profileName {
+            self.currentProfile = self.profiles.first
+          }
+        }
+      }
+      
+    case .profileError:
+      NSLog("[AppState] Profile error occurred")
+      Task { @MainActor in
+        self.errorMessage = "Profile operation failed"
+      }
     }
   }
 

@@ -2,10 +2,9 @@ import Core
 import SwiftUI
 
 struct MappingView: View {
-  @EnvironmentObject var _appState: AppState
+  @EnvironmentObject var viewModel: MappingViewModel
   @State private var _selectedButton: String?
   @State private var _recordingButton: String?
-  @State private var _searchText: String = ""
   @State private var _showingDetail: Bool = false
 
   private let _standardButtons = GamepadConstants.Button.allNames
@@ -48,14 +47,13 @@ struct MappingView: View {
 
   private var _sidebar: some View {
     VStack(spacing: 0) {
-      if _appState.selectedDevice == nil {
+      if viewModel.selectedDevice == nil {
         _noDeviceSelectedView
       } else {
         MappingListView(
           buttons: _standardButtons,
           selectedButton: _selectedButton,
           recordingButton: _recordingButton,
-          searchText: _searchText,
           onSelect: { button in
             _startRecording(for: button)
           },
@@ -85,7 +83,7 @@ struct MappingView: View {
         .multilineTextAlignment(.center)
 
       Button(action: {
-        _appState.selectedTab = .devices
+        viewModel.selectedTab = .devices
       }) {
         Label("Select Device", systemImage: "gamecontroller")
       }
@@ -142,7 +140,7 @@ struct MappingView: View {
   }
 
   private func _mapping(for button: String) -> ButtonMapping? {
-    _appState.currentProfile?.buttonMappings.first { $0.buttonIdentifier == button }
+    viewModel.currentProfile?.buttonMappings.first { $0.buttonIdentifier == button }
   }
 
   private func _startRecording(for button: String) {
@@ -150,7 +148,7 @@ struct MappingView: View {
   }
 
   private func _saveMapping(_ mapping: ButtonMapping) {
-    guard let profile = _appState.currentProfile else { return }
+    guard let profile = viewModel.currentProfile else { return }
     var mappings = profile.buttonMappings
 
     if let index = mappings.firstIndex(where: { $0.buttonIdentifier == mapping.buttonIdentifier }) {
@@ -160,24 +158,24 @@ struct MappingView: View {
     }
 
     let updatedProfile = profile.withButtonMappings(mappings)
-    _appState.currentProfile = updatedProfile
+    viewModel.currentProfile = updatedProfile
 
     Task {
-      await _appState.saveCurrentProfile()
+      await viewModel.saveCurrentProfile()
     }
 
     _recordingButton = nil
   }
 
   private func _deleteMapping(for button: String) {
-    guard let profile = _appState.currentProfile else { return }
+    guard let profile = viewModel.currentProfile else { return }
     let mappings = profile.buttonMappings.filter { $0.buttonIdentifier != button }
 
     let updatedProfile = profile.withButtonMappings(mappings)
-    _appState.currentProfile = updatedProfile
+    viewModel.currentProfile = updatedProfile
 
     Task {
-      await _appState.saveCurrentProfile()
+      await viewModel.saveCurrentProfile()
     }
 
     _recordingButton = nil
@@ -187,7 +185,7 @@ struct MappingView: View {
 struct MappingView_Previews: PreviewProvider {
   static var previews: some View {
     MappingView()
-      .environmentObject(AppState())
+      .environmentObject(MappingViewModel())
       .frame(width: 600, height: 400)
   }
 }

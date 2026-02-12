@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-  @EnvironmentObject var appState: AppState
+  @EnvironmentObject var viewModel: SettingsViewModel
 
   var body: some View {
     ScrollView {
@@ -24,8 +24,8 @@ struct SettingsView: View {
         ToggleRow(
           title: "Start at Login",
           description: "Launch Enjoyable when you log in to your computer",
-          isOn: appState.startAtLogin,
-          onToggle: { appState.setStartAtLogin($0) }
+          isOn: viewModel.startAtLogin,
+          onToggle: { viewModel.setStartAtLogin($0) }
         )
 
         Divider()
@@ -34,10 +34,9 @@ struct SettingsView: View {
         ToggleRow(
           title: "Show Notifications",
           description: "Display notifications for device connections and disconnections",
-          isOn: appState.showNotifications,
+          isOn: viewModel.showNotifications,
           onToggle: { value in
-            appState.showNotifications = value
-            appState.saveSettings()
+            viewModel.setShowNotifications(value)
           }
         )
 
@@ -47,10 +46,9 @@ struct SettingsView: View {
         ToggleRow(
           title: "Minimize to Tray",
           description: "When closing the window, minimize to the menu bar instead of quitting",
-          isOn: appState.minimizeToTray,
+          isOn: viewModel.minimizeToTray,
           onToggle: { value in
-            appState.minimizeToTray = value
-            appState.saveSettings()
+            viewModel.setMinimizeToTray(value)
           }
         )
       }
@@ -79,19 +77,18 @@ struct SettingsView: View {
           HStack(spacing: 0) {
             ForEach(AppearanceMode.allCases) { mode in
               Button(action: {
-                appState.appearanceMode = mode
-                appState.saveSettings()
+                viewModel.setAppearanceMode(mode)
               }) {
                 Text(mode.displayName)
                   .font(.caption)
-                  .fontWeight(appState.appearanceMode == mode ? .semibold : .regular)
-                  .foregroundColor(appState.appearanceMode == mode ? .primary : .secondary)
+                  .fontWeight(viewModel.appearanceMode == mode ? .semibold : .regular)
+                  .foregroundColor(viewModel.appearanceMode == mode ? .primary : .secondary)
                   .padding(.horizontal, 12)
                   .padding(.vertical, 6)
                   .background(
                     RoundedRectangle(cornerRadius: 6)
                       .fill(
-                        appState.appearanceMode == mode
+                        viewModel.appearanceMode == mode
                           ? Color(nsColor: .controlAccentColor).opacity(0.2) : Color.clear
                       )
                   )
@@ -124,9 +121,30 @@ struct SettingsView: View {
 
           Spacer()
 
-          Text("0.1s")
-            .font(.body)
-            .foregroundColor(.secondary)
+          Menu {
+            ForEach(viewModel.refreshRateOptions, id: \.self) { rate in
+              Button(action: {
+                viewModel.setDeviceRefreshRate(rate)
+              }) {
+                HStack {
+                  Text(viewModel.formattedRefreshRate(rate))
+                  if rate == viewModel.deviceRefreshRate {
+                    Image(systemName: "checkmark")
+                  }
+                }
+              }
+            }
+          } label: {
+            HStack(spacing: 4) {
+              Text(viewModel.formattedRefreshRate(viewModel.deviceRefreshRate))
+                .font(.body)
+                .foregroundColor(.primary)
+              Image(systemName: "chevron.down")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+          }
+          .buttonStyle(.plain)
         }
         .padding()
 
@@ -144,8 +162,14 @@ struct SettingsView: View {
 
           Spacer()
 
-          Toggle("", isOn: .constant(true))
-            .labelsHidden()
+          Toggle(
+            "",
+            isOn: Binding(
+              get: { viewModel.autoConnect },
+              set: { viewModel.setAutoConnect($0) }
+            )
+          )
+          .labelsHidden()
         }
         .padding()
       }

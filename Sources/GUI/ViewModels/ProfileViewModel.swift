@@ -174,4 +174,26 @@ final class ProfileViewModel: ObservableObject {
       errorMessage = "Failed to import profile: \(error.localizedDescription)"
     }
   }
+
+  func saveCurrentProfile() async {
+    guard let profile = currentProfile else { return }
+    await saveProfile(profile)
+  }
+
+  var selectedDevice: GamepadDevice? {
+    guard let deviceID = currentProfile?.deviceID else { return nil }
+    return connectedDevices.first { device in
+      device.vendorID == deviceID.vendorID && device.productID == deviceID.productID
+    }
+  }
+
+  @Published var connectedDevices: [GamepadDevice] = []
+
+  func loadConnectedDevices() async {
+    #if os(macOS)
+    if let service = sharedUSBDeviceService {
+      connectedDevices = await service.getConnectedDevices()
+    }
+    #endif
+  }
 }

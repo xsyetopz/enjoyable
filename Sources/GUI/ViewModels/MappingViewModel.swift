@@ -1,18 +1,28 @@
 import Combine
+import Configuration
 import Core
 import SwiftUI
 
 @MainActor
 final class MappingViewModel: ObservableObject {
-  @Published var selectedButton: String?
-  @Published var isRecording: Bool = false
-  @Published var recordedKeyCode: UInt16 = 0
-  @Published var recordedModifier: KeyModifier = .none
-  @Published var availableKeys: [KeyOption] = []
+  @Published public var selectedButton: String?
+  @Published public var isRecording: Bool = false
+  @Published public var recordedKeyCode: UInt16 = 0
+  @Published public var recordedModifier: KeyModifier = .none
 
-  let standardButtons = GamepadConstants.Button.allNames
+  @Published public var selectedDevice: GamepadDevice?
+  @Published public var selectedTab: MainTab = .devices
+  @Published public var currentProfile: Profile?
+  @Published public var buttonStates: [String: Bool] = [:]
+  @Published public var searchText: String = ""
 
-  init() {
+  @Published public var availableKeys: [KeyOption] = []
+  public let standardButtons = GamepadConstants.Button.allNames
+
+  private let _profileStore: ProfileStore
+
+  init(profileStore: ProfileStore = ProfileStore()) {
+    self._profileStore = profileStore
     _loadAvailableKeys()
   }
 
@@ -91,6 +101,34 @@ final class MappingViewModel: ObservableObject {
       recordedKeyCode = 0
       recordedModifier = .none
     }
+  }
+
+  func saveCurrentProfile() async {
+    guard let profile = currentProfile else { return }
+    do {
+      try await _profileStore.saveProfile(profile)
+    } catch {
+      NSLog("Failed to save profile: \(error)")
+    }
+  }
+
+  func updateButtonMapping(for buttonIdentifier: String, mapping: ButtonMapping) {
+    guard var profile = currentProfile else { return }
+    var mappings = profile.buttonMappings
+    if let index = mappings.firstIndex(where: { $0.buttonIdentifier == buttonIdentifier }) {
+      mappings[index] = mapping
+    } else {
+      mappings.append(mapping)
+    }
+    profile = profile.withButtonMappings(mappings)
+    currentProfile = profile
+  }
+
+  func removeButtonMapping(for buttonIdentifier: String) {
+    guard var profile = currentProfile else { return }
+    let mappings = profile.buttonMappings.filter { $0.buttonIdentifier != buttonIdentifier }
+    profile = profile.withButtonMappings(mappings)
+    currentProfile = profile
   }
 
   func keyCodeToString(_ keyCode: UInt16) -> String {

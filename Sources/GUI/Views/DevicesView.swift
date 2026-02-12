@@ -2,14 +2,14 @@ import Core
 import SwiftUI
 
 struct DevicesView: View {
-  @EnvironmentObject var appState: AppState
+  @EnvironmentObject var viewModel: DevicesViewModel
 
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
         _headerView
 
-        if appState.connectedDevices.isEmpty {
+        if viewModel.devices.isEmpty {
           _emptyStateView
         } else {
           _devicesListView
@@ -26,7 +26,7 @@ struct DevicesView: View {
           .font(.title2.bold())
 
         Text(
-          "\(appState.connectedDevices.count) device\(appState.connectedDevices.count == 1 ? "" : "s")"
+          "\(viewModel.devices.count) device\(viewModel.devices.count == 1 ? "" : "s")"
         )
         .font(.subheadline)
         .foregroundColor(.secondary)
@@ -36,7 +36,7 @@ struct DevicesView: View {
 
       Button(action: {
         Task {
-          await appState.refreshDevices()
+          await viewModel.refreshDevices()
         }
       }) {
         Image(systemName: "arrow.clockwise")
@@ -63,7 +63,7 @@ struct DevicesView: View {
 
       Button(action: {
         Task {
-          await appState.refreshDevices()
+          await viewModel.refreshDevices()
         }
       }) {
         Label("Scan for Devices", systemImage: "magnifyingglass")
@@ -79,18 +79,18 @@ struct DevicesView: View {
 
   private var _devicesListView: some View {
     LazyVStack(spacing: 12) {
-      ForEach(appState.connectedDevices) { device in
+      ForEach(viewModel.devices) { device in
         DeviceRowView(
           device: device,
-          isSelected: appState.selectedDevice?.id == device.id,
+          isSelected: viewModel.selectedDevice?.id == device.id,
           onConfigure: {
             Task { @MainActor in
-              await appState.configureDevice(device)
+              viewModel.configureDevice(device)
             }
           }
         )
         .onTapGesture {
-          appState.selectedDevice = device
+          viewModel.selectDevice(device)
         }
       }
     }

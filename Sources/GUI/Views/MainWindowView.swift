@@ -3,6 +3,10 @@ import SwiftUI
 
 struct MainWindowView: View {
   @EnvironmentObject var appState: AppState
+  @StateObject private var _devicesViewModel = DevicesViewModel()
+  @StateObject private var _mappingViewModel = MappingViewModel()
+  @StateObject private var _profileViewModel = ProfileViewModel()
+  @StateObject private var _settingsViewModel = SettingsViewModel()
 
   var body: some View {
     VStack(spacing: 0) {
@@ -49,12 +53,16 @@ struct MainWindowView: View {
       switch appState.selectedTab {
       case .devices:
         DevicesView()
+          .environmentObject(_devicesViewModel)
       case .mapping:
         MappingView()
+          .environmentObject(_mappingViewModel)
       case .profiles:
         ProfileView()
+          .environmentObject(_profileViewModel)
       case .settings:
         SettingsView()
+          .environmentObject(_settingsViewModel)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
