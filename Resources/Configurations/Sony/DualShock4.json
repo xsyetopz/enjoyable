@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "$schema": "../../Protocols/DS4.json",
   "device": {
     "vendorId": 1356,
     "productId": 1476,
