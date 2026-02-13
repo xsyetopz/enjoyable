@@ -1,21 +1,13 @@
 // swift-tools-version: 6.2
 import PackageDescription
 
-let package = Package(
+/// OpenGameControllerDriver package configuration.
+public let kPackage = Package(
   name: "OpenGameControllerDriver",
   platforms: [
-    .macOS(.v12)
+    .macOS(.v14)
   ],
-  products: [
-    .executable(
-      name: "enjoyable-cli",
-      targets: ["CLI"]
-    ),
-    .executable(
-      name: "enjoyable",
-      targets: ["GUI"]
-    ),
-  ],
+  products: [],
   dependencies: [],
   targets: []
 )
