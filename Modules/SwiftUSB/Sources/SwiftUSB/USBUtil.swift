@@ -279,6 +279,10 @@ private func decodeUTF16String(from buffer: [UInt8]) throws -> String? {
   return str
 }
 
+public func getString(from device: USBDevice, index: Int) throws -> String? {
+  try getString(from: device, index: index, languageID: nil)
+}
+
 public func createBuffer(length: Int) -> [UInt8] {
   [UInt8](repeating: 0, count: length)
 }
@@ -398,4 +402,10 @@ public func withDeviceHandle<T>(
   defer { libusb_close(deviceHandle) }
 
   return try operation(deviceHandle)
+}
+
+public extension USBDevice {
+  func getString(index: Int) throws -> String? {
+    try SwiftUSB.getString(from: self, index: index)
+  }
 }

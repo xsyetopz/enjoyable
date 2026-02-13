@@ -6,7 +6,7 @@ extension USBDevice {
   internal static let logger = Logger(label: "io.github.xsyetopz.swiftusb.USBDevice")
 }
 
-public struct USBDevice: @unchecked Sendable {
+public final class USBDevice: @unchecked Sendable {
   internal let device: OpaquePointer
   public let bLength: UInt8
   public let bDescriptorType: UInt8
@@ -22,10 +22,12 @@ public struct USBDevice: @unchecked Sendable {
   public let iProduct: UInt8
   public let iSerialNumber: UInt8
   public let bNumConfigurations: UInt8
-  public let busNumber: UInt8
-  public let deviceAddress: UInt8
-  public let portNumber: UInt8
+  public let bus: UInt8
+  public let address: UInt8
+  public let port: UInt8
   public let speed: USBSpeed
+
+  private var cachedHandle: USBDeviceHandle?
 
   internal init(device: OpaquePointer, descriptor: libusb_device_descriptor) {
     self.device = device
@@ -44,18 +46,10 @@ public struct USBDevice: @unchecked Sendable {
     self.iSerialNumber = descriptor.iSerialNumber
     self.bNumConfigurations = descriptor.bNumConfigurations
 
-    self.busNumber = libusb_get_bus_number(device)
-    self.deviceAddress = libusb_get_device_address(device)
-    self.portNumber = libusb_get_port_number(device)
+    self.bus = libusb_get_bus_number(device)
+    self.address = libusb_get_device_address(device)
+    self.port = libusb_get_port_number(device)
     self.speed = USBSpeed(libusb_get_device_speed(device))
-  }
-
-  public var vendorID: UInt16 {
-    idVendor
-  }
-
-  public var productID: UInt16 {
-    idProduct
   }
 
   public var deviceClass: UInt8 {
@@ -92,7 +86,7 @@ public struct USBDevice: @unchecked Sendable {
   }
 
   public func open() throws -> USBDeviceHandle {
-    let vendorProduct = String(format: "%04X:%04X", vendorID, productID)
+    let vendorProduct = String(format: "%04X:%04X", idVendor, idProduct)
     Self.logger.debug("Opening device \(vendorProduct)")
     var handle: OpaquePointer?
     let result = libusb_open(device, &handle)
@@ -106,7 +100,7 @@ public struct USBDevice: @unchecked Sendable {
   }
 
   public func openWithCapture() throws -> USBDeviceHandle {
-    let vendorProduct = String(format: "%04X:%04X", vendorID, productID)
+    let vendorProduct = String(format: "%04X:%04X", idVendor, idProduct)
     Self.logger.debug("Opening device with capture \(vendorProduct)")
     var handle: OpaquePointer?
     let result = libusb_open(device, &handle)
@@ -145,7 +139,7 @@ public struct USBDevice: @unchecked Sendable {
   }
 
   public func reset() throws {
-    let vendorProduct = String(format: "%04X:%04X", vendorID, productID)
+    let vendorProduct = String(format: "%04X:%04X", idVendor, idProduct)
     Self.logger.debug("Resetting device \(vendorProduct)")
     var handle: OpaquePointer?
     let openResult = libusb_open(device, &handle)
@@ -265,6 +259,67 @@ public struct USBDevice: @unchecked Sendable {
     Self.logger.debug("Got configuration descriptor at index \(index)")
     return USBConfigurationDescriptor(descriptor: desc.pointee)
   }
+
+  private func getHandle() throws -> USBDeviceHandle {
+    if let handle = cachedHandle, handle.isOpen {
+      return handle
+    }
+    let handle = try open()
+    cachedHandle = handle
+    return handle
+  }
+
+  public func read(
+    endpoint: UInt8,
+    length: Int,
+    timeout: UInt32 = 5000
+  ) throws -> Data {
+    let handle = try getHandle()
+    return try handle.readBulk(endpoint: endpoint, length: length, timeout: timeout)
+  }
+
+  public func write(
+    endpoint: UInt8,
+    data: Data,
+    timeout: UInt32 = 5000
+  ) throws -> Int {
+    let handle = try getHandle()
+    return try handle.bulkTransfer(endpoint: endpoint, data: data, timeout: timeout)
+  }
+
+  public func setConfiguration(_ configuration: Int) throws {
+    let handle = try getHandle()
+    try handle.setConfiguration(configuration)
+  }
+
+  public func getActiveConfiguration() throws -> UInt8 {
+    let handle = try getHandle()
+    return UInt8(try handle.getConfiguration())
+  }
+
+  public func isKernelDriverActiveUsingHandle(interface: Int) throws -> Bool {
+    let handle = try getHandle()
+    return try handle.isKernelDriverActive(interface: interface)
+  }
+
+  public func detachKernelDriver(interface: Int) throws {
+    let handle = try getHandle()
+    try handle.detachKernelDriver(interface: interface)
+  }
+
+  public func claimInterface(_ number: Int) throws {
+    let handle = try getHandle()
+    try handle.claimInterface(number)
+  }
+
+  public func releaseInterface(_ number: Int) throws {
+    let handle = try getHandle()
+    try handle.releaseInterface(number)
+  }
+
+  deinit {
+    cachedHandle = nil
+  }
 }
 
 public enum USBSpeed {
@@ -351,5 +406,42 @@ public struct USBConfigurationDescriptor: @unchecked Sendable {
 
   public var maxPower: UInt8 {
     descriptor.MaxPower
+  }
+}
+
+public extension USBDevice {
+  static func findAll(
+    vendorID: UInt16? = nil,
+    productID: UInt16? = nil,
+    deviceClass: UInt8? = nil
+  ) async throws -> [USBDevice] {
+    let context = try USBContext()
+    var devices: [USBDevice] = []
+    for await device in context.findDevices(
+      vendorID: vendorID,
+      productID: productID,
+      deviceClass: deviceClass,
+      findAll: true
+    ) {
+      devices.append(device)
+    }
+    return devices
+  }
+
+  static func find(
+    vendorID: UInt16? = nil,
+    productID: UInt16? = nil,
+    deviceClass: UInt8? = nil
+  ) async throws -> USBDevice? {
+    let context = try USBContext()
+    for await device in context.findDevices(
+      vendorID: vendorID,
+      productID: productID,
+      deviceClass: deviceClass,
+      findAll: false
+    ) {
+      return device
+    }
+    return nil
   }
 }
