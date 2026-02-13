@@ -2,15 +2,15 @@ import CLibUSB
 import Foundation
 import Logging
 
-@usableFromInline internal let defaultTimeout: UInt32 = 5000
-private let isoMaxPacketSize = 1024
-private let isoDefaultReadLength = 2048
+@usableFromInline internal let kDefaultTimeout: UInt32 = 5000
+private let kIsoMaxPacketSize = 1024
+private let kIsoDefaultReadLength = 2048
 
 public extension USBDeviceHandle {
   func bulkTransfer(
     endpoint: UInt8,
     data: Data,
-    timeout: UInt32 = defaultTimeout
+    timeout: UInt32 = kDefaultTimeout
   ) throws -> Int {
     USBDeviceHandle.logger.debug("Bulk transfer OUT to endpoint \(endpoint): \(data.count) bytes")
 
@@ -23,7 +23,7 @@ public extension USBDeviceHandle {
   func readBulk(
     endpoint: UInt8,
     length: Int,
-    timeout: UInt32 = defaultTimeout
+    timeout: UInt32 = kDefaultTimeout
   ) throws -> Data {
     USBDeviceHandle.logger.debug(
       "Bulk transfer IN from endpoint \(endpoint): requesting \(length) bytes"
@@ -40,7 +40,7 @@ public extension USBDeviceHandle {
   func interruptTransfer(
     endpoint: UInt8,
     data: [UInt8],
-    timeout: UInt32 = defaultTimeout
+    timeout: UInt32 = kDefaultTimeout
   ) throws -> Int {
     USBDeviceHandle.logger.debug(
       "Interrupt transfer OUT to endpoint \(endpoint): \(data.count) bytes"
@@ -72,7 +72,7 @@ public extension USBDeviceHandle {
   func readInterrupt(
     endpoint: UInt8,
     length: Int,
-    timeout: UInt32 = defaultTimeout
+    timeout: UInt32 = kDefaultTimeout
   ) throws -> [UInt8] {
     USBDeviceHandle.logger.debug(
       "Interrupt transfer IN from endpoint \(endpoint): requesting \(length) bytes"
@@ -102,7 +102,7 @@ public extension USBDeviceHandle {
   func isochronousTransfer(
     endpoint: UInt8,
     data: Data,
-    timeout: UInt32 = defaultTimeout
+    timeout: UInt32 = kDefaultTimeout
   ) async throws -> Int {
     USBDeviceHandle.logger.debug(
       "Isochronous transfer OUT to endpoint \(endpoint): \(data.count) bytes"
@@ -127,7 +127,7 @@ public extension USBDeviceHandle {
   func readIsochronous(
     endpoint: UInt8,
     length: Int,
-    timeout: UInt32 = defaultTimeout
+    timeout: UInt32 = kDefaultTimeout
   ) async throws -> Data {
     USBDeviceHandle.logger.debug(
       "Isochronous transfer IN from endpoint \(endpoint): requesting \(length) bytes"
@@ -151,7 +151,7 @@ public extension USBDeviceHandle {
 }
 
 internal extension USBDeviceHandle {
-  private func allocateIsoTransferBuffer(
+  func allocateIsoTransferBuffer(
     bufferSize: Int,
     endpoint: UInt8,
     timeout: UInt32,
@@ -164,7 +164,7 @@ internal extension USBDeviceHandle {
       return nil
     }
 
-    let numPackets = (bufferSize + isoMaxPacketSize - 1) / isoMaxPacketSize
+    let numPackets = (bufferSize + kIsoMaxPacketSize - 1) / kIsoMaxPacketSize
 
     let continuationHolder = IsoContinuationHolder<Int>()
     continuationHolder.continuation = continuation
@@ -218,7 +218,7 @@ internal extension USBDeviceHandle {
     return transfer
   }
 
-  private func submitTransfer(
+  func submitTransfer(
     transfer: UnsafeMutablePointer<libusb_transfer>,
     endpoint: UInt8,
     continuation: CheckedContinuation<Int, Error>
@@ -232,7 +232,7 @@ internal extension USBDeviceHandle {
     }
   }
 
-  private func createIsochronousReadTransfer(
+  func createIsochronousReadTransfer(
     endpoint: UInt8,
     length: Int,
     timeout: UInt32,
@@ -267,11 +267,11 @@ internal extension USBDeviceHandle {
     return transfer
   }
 
-  private func calculateIsoPacketCount(length: Int) -> Int {
-    return (length + isoMaxPacketSize - 1) / isoMaxPacketSize
+  func calculateIsoPacketCount(length: Int) -> Int {
+    (length + kIsoMaxPacketSize - 1) / kIsoMaxPacketSize
   }
 
-  private func submitIsochronousReadTransfer(
+  func submitIsochronousReadTransfer(
     transfer: UnsafeMutablePointer<libusb_transfer>,
     continuation: CheckedContinuation<Data, Error>
   ) {
@@ -284,7 +284,7 @@ internal extension USBDeviceHandle {
     }
   }
 
-  private func handleIsoReadCompletion(
+  func handleIsoReadCompletion(
     transfer: UnsafeMutablePointer<libusb_transfer>,
     holder: IsoContinuationHolder<Data>
   ) {

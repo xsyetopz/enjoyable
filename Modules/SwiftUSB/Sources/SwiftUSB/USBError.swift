@@ -146,11 +146,10 @@ public struct USBError: Error, Sendable {
 
   public static func checkSuccess(_ result: Int32, context: String = "") throws {
     if result != success {
-      if context.isEmpty {
-        throw Self(code: result)
-      } else {
+      guard context.isEmpty else {
         throw Self(code: result, context: context)
       }
+      throw Self(code: result)
     }
   }
 }

@@ -1,9 +1,11 @@
 import Foundation
 
 public enum USBConstants {
-  public static let USB_VERSION: UInt16 = 0x0200
-  public static let USB_VERSION_3_0: UInt16 = 0x0300
-  public static let USB_VERSION_3_1: UInt16 = 0x0310
+  public static let usbVersion: UInt16 = 0x0200
+  // swiftlint:disable:next identifier_name
+  public static let usbVersion3_0: UInt16 = 0x0300
+  // swiftlint:disable:next identifier_name
+  public static let usbVersion3_1: UInt16 = 0x0310
 
   public enum DescriptorType: UInt8 {
     case device = 0x01
