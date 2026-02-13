@@ -1,5 +1,10 @@
 import CLibUSB
 import Foundation
+import Logging
+
+extension USBInterface {
+  internal static let logger = Logger(label: "io.github.xsyetopz.swiftusb.USBInterface")
+}
 
 public struct USBInterface: Sendable {
   public let bLength: UInt8
@@ -32,9 +37,8 @@ public struct USBInterface: Sendable {
 
     self.cachedEndpoints = nil
 
-    NSLog(
-      "SwiftUSB: USBInterface initialized - number=\(self.bInterfaceNumber) "
-        + "altSetting=\(self.bAlternateSetting) endpoints=\(self.bNumEndpoints)"
+    Self.logger.debug(
+      "USBInterface initialized - number=\(self.bInterfaceNumber) altSetting=\(self.bAlternateSetting) endpoints=\(self.bNumEndpoints)"
     )
   }
 
@@ -60,7 +64,7 @@ public struct USBInterface: Sendable {
       return endpoints
     }
 
-    NSLog("SwiftUSB: Warning - endpoints not loaded. Use endpoints(descriptor:) to initialize.")
+    Self.logger.debug("Warning - endpoints not loaded. Use endpoints(descriptor:) to initialize.")
     return []
   }
 
@@ -73,19 +77,19 @@ public struct USBInterface: Sendable {
       return endpoints[index]
     }
 
-    NSLog("SwiftUSB: Warning - endpoint at index \(index) not available")
+    Self.logger.debug("Warning - endpoint at index \(index) not available")
     return nil
   }
 
   public func setAltSetting(on handle: USBDeviceHandle) throws {
-    NSLog("SwiftUSB: Setting alt setting \(bAlternateSetting) for interface \(bInterfaceNumber)")
+    Self.logger.debug("Setting alt setting \(bAlternateSetting) for interface \(bInterfaceNumber)")
 
     try handle.setInterfaceAltSetting(
       interface: Int(bInterfaceNumber),
       alternateSetting: Int(bAlternateSetting)
     )
 
-    NSLog("SwiftUSB: Alt setting set successfully for interface \(bInterfaceNumber)")
+    Self.logger.debug("Alt setting set successfully for interface \(bInterfaceNumber)")
   }
 
   public func interfaceDescription() -> String {

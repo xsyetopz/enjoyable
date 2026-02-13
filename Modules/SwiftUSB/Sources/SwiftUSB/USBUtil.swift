@@ -1,5 +1,10 @@
 import CLibUSB
 import Foundation
+import Logging
+
+extension USBUtil {
+  internal static let logger = Logger(label: "io.github.xsyetopz.swiftusb.USBUtil")
+}
 
 public enum USBUtil {}
 
@@ -57,7 +62,7 @@ public func findDescriptor<T: USBDescriptor>(
 }
 
 public func getLanguageIDs(from device: USBDevice) throws -> [UInt16] {
-  NSLog("USBUtil:Getting language IDs from device")
+  USBUtil.logger.debug("Getting language IDs from device")
 
   let handle = try openDeviceHandle(for: device)
   defer { libusb_close(handle) }
@@ -68,7 +73,7 @@ public func getLanguageIDs(from device: USBDevice) throws -> [UInt16] {
   }
 
   let languageIDs = extractLanguageIDs(from: buffer)
-  NSLog("USBUtil:Found \(languageIDs.count) language IDs")
+  USBUtil.logger.debug("Found \(languageIDs.count) language IDs")
   return languageIDs
 }
 
@@ -78,7 +83,7 @@ private func openDeviceHandle(for device: USBDevice) throws -> OpaquePointer {
   try USBError.check(openResult, context: "Failed to open device for language IDs")
 
   guard let deviceHandle = handle else {
-    NSLog("USBUtil:Failed to open device for language IDs - handle is nil")
+    USBUtil.logger.error("Failed to open device for language IDs - handle is nil")
     throw USBError(message: "Failed to open device for language IDs")
   }
 
@@ -109,12 +114,12 @@ private func fetchLanguageIDDescriptor(on handle: OpaquePointer) throws -> [UInt
   try USBError.check(result, context: "Failed to get language ID descriptor")
 
   guard result >= 4 else {
-    NSLog("USBUtil:Language ID descriptor too short: \(result) bytes")
+    USBUtil.logger.debug("Language ID descriptor too short: \(result) bytes")
     return []
   }
 
   guard result.isMultiple(of: 2) else {
-    NSLog("USBUtil:Language ID descriptor has odd length: \(result)")
+    USBUtil.logger.debug("Language ID descriptor has odd length: \(result)")
     return []
   }
 
@@ -132,7 +137,7 @@ private func extractLanguageIDs(from buffer: [UInt8]) -> [UInt16] {
   for i in stride(from: 2, to: dataLength, by: 2) {
     let langID = UInt16(buffer[i]) | (UInt16(buffer[i + 1]) << 8)
     languageIDs.append(langID)
-    NSLog("USBUtil:Found language ID: 0x\(String(format: "%04X", langID))")
+    USBUtil.logger.debug("Found language ID: 0x\(String(format: "%04X", langID))")
   }
 
   return languageIDs
@@ -140,12 +145,12 @@ private func extractLanguageIDs(from buffer: [UInt8]) -> [UInt16] {
 
 private func validateDescriptor(_ buffer: [UInt8], transferResult: Int) -> Bool {
   guard transferResult >= 4 else {
-    NSLog("USBUtil:Language ID descriptor too short: \(transferResult) bytes")
+    USBUtil.logger.debug("Language ID descriptor too short: \(transferResult) bytes")
     return false
   }
 
   guard transferResult.isMultiple(of: 2) else {
-    NSLog("USBUtil:Language ID descriptor has odd length: \(transferResult)")
+    USBUtil.logger.debug("Language ID descriptor has odd length: \(transferResult)")
     return false
   }
 
@@ -158,12 +163,12 @@ public func getString(
   languageID: UInt16? = nil
 ) throws -> String? {
   guard index > 0 else {
-    NSLog("USBUtil:getString - index 0 returns nil")
+    USBUtil.logger.debug("getString - index 0 returns nil")
     return nil
   }
 
   let langIDText = languageID.map { String($0) } ?? "auto"
-  NSLog("USBUtil:Getting string descriptor at index \(index), langID: \(langIDText)")
+  USBUtil.logger.debug("Getting string descriptor at index \(index), langID: \(langIDText)")
 
   let deviceHandle = try openDeviceHandleForString(device)
   defer { libusb_close(deviceHandle) }
@@ -183,7 +188,7 @@ private func openDeviceHandleForString(_ device: USBDevice) throws -> OpaquePoin
   try USBError.check(openResult, context: "Failed to open device for string descriptor")
 
   guard let deviceHandle = handle else {
-    NSLog("USBUtil:Failed to open device for string descriptor - handle is nil")
+    USBUtil.logger.error("Failed to open device for string descriptor - handle is nil")
     throw USBError(message: "Failed to open device for string descriptor")
   }
 
@@ -201,11 +206,11 @@ private func determineLanguageID(
 
   let langIDs = try getLanguageIDs(from: device)
   guard let firstLangID = langIDs.first else {
-    NSLog("USBUtil:Device has no supported language IDs")
+    USBUtil.logger.error("Device has no supported language IDs")
     throw USBError(message: "Device has no supported language IDs")
   }
 
-  NSLog("USBUtil:Using first language ID: 0x\(String(format: "%04X", firstLangID))")
+  USBUtil.logger.debug("Using first language ID: 0x\(String(format: "%04X", firstLangID))")
   return firstLangID
 }
 
@@ -238,7 +243,7 @@ private func fetchStringDescriptorData(
   try USBError.check(result, context: "Failed to get string descriptor")
 
   guard result >= 2 else {
-    NSLog("USBUtil:String descriptor too short: \(result) bytes")
+    USBUtil.logger.debug("String descriptor too short: \(result) bytes")
     throw USBError(message: "String descriptor too short")
   }
 
@@ -248,13 +253,13 @@ private func fetchStringDescriptorData(
 private func decodeUTF16String(from buffer: [UInt8]) throws -> String? {
   let descriptorLength = Int(buffer[0])
   guard descriptorLength >= 2 else {
-    NSLog("USBUtil:Invalid string descriptor length: \(descriptorLength)")
+    USBUtil.logger.debug("Invalid string descriptor length: \(descriptorLength)")
     return nil
   }
 
   let dataLength = min(buffer.count, Int(descriptorLength & 0xFE))
   guard dataLength >= 4 else {
-    NSLog("USBUtil:String descriptor too short for UTF-16 data: \(dataLength) bytes")
+    USBUtil.logger.debug("String descriptor too short for UTF-16 data: \(dataLength) bytes")
     return nil
   }
 
@@ -266,11 +271,11 @@ private func decodeUTF16String(from buffer: [UInt8]) throws -> String? {
 
   let utf16Data = Data(bytes: unicodeChars, count: unicodeChars.count * MemoryLayout<UInt16>.size)
   guard let str = String(data: utf16Data, encoding: .utf16LittleEndian) else {
-    NSLog("USBUtil:Failed to decode UTF-16 string")
+    USBUtil.logger.debug("Failed to decode UTF-16 string")
     return nil
   }
 
-  NSLog("USBUtil:Decoded string: \"\(str)\"")
+  USBUtil.logger.debug("Decoded string: \"\(str)\"")
   return str
 }
 
@@ -282,7 +287,7 @@ public func disposeResources(for handle: USBDeviceHandle) {
   for interface in handle.claimedInterfaces {
     let result = libusb_release_interface(handle.handle, Int32(interface))
     if result < 0 {
-      NSLog("SwiftUSB: Failed to release interface \(interface): error code \(result)")
+      USBUtil.logger.error("Failed to release interface \(interface): error code \(result)")
     }
   }
   handle.claimedInterfaces.removeAll()

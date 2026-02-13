@@ -1,6 +1,11 @@
 import CLibUSB
 import Dispatch
 import Foundation
+import Logging
+
+extension USBContext {
+  internal static let logger = Logger(label: "io.github.xsyetopz.swiftusb.USBContext")
+}
 
 public final class USBContext: @unchecked Sendable {
   private let context: OpaquePointer
@@ -10,22 +15,24 @@ public final class USBContext: @unchecked Sendable {
     var ctx: OpaquePointer?
     let result = libusb_init(&ctx)
     if result < 0 {
-      NSLog("[SwiftUSB] Context: Failed to initialize USB context: %s", libusb_error_name(result))
+      Self.logger.error(
+        "Failed to initialize USB context: \(String(cString: libusb_error_name(result)))"
+      )
       throw USBError(code: result)
     }
     guard let context = ctx else {
-      NSLog("[SwiftUSB] Context: Failed to initialize USB context - null context returned")
+      Self.logger.error("Failed to initialize USB context - null context returned")
       throw USBError(message: "Failed to initialize USB context")
     }
     self.context = context
     self.eventQueue = DispatchQueue(label: "swiftusb.events", qos: .utility)
     startEventHandling()
-    NSLog("[SwiftUSB] Context: Initialized successfully")
+    Self.logger.debug("Initialized successfully")
   }
 
   deinit {
     libusb_exit(context)
-    NSLog("[SwiftUSB] Context: Deinitialized")
+    Self.logger.debug("Deinitialized")
   }
 
   private func startEventHandling() {
@@ -37,7 +44,7 @@ public final class USBContext: @unchecked Sendable {
         var timeout = timeval(tv_sec: 0, tv_usec: 100_000)
         let result = libusb_handle_events_timeout(self.context, &timeout)
         guard result >= 0 else {
-          NSLog("[SwiftUSB] Context: Event handling error: %s", libusb_error_name(result))
+          Self.logger.warning("Event handling error: \(String(cString: libusb_error_name(result)))")
           continue
         }
       }
@@ -64,7 +71,7 @@ public final class USBContext: @unchecked Sendable {
       defer {
         libusb_free_device_list(deviceListPtr.pointee, 1)
         deviceListPtr.deallocate()
-        NSLog("[SwiftUSB] Context: Device list operations complete")
+        Self.logger.debug("Device list operations complete")
       }
 
       logFilterInformation(vendorID: vendorID, productID: productID, deviceClass: deviceClass)
@@ -78,19 +85,14 @@ public final class USBContext: @unchecked Sendable {
         continuation: continuation
       )
 
-      NSLog(
-        "[SwiftUSB] Context: Search complete - found %d device(s)",
-        deviceCount
-      )
+      Self.logger.debug("Search complete - found \(deviceCount) device(s)")
       continuation.finish()
     }
   }
 
   public func findDevice(vendorID: UInt16, productID: UInt16) async -> USBDevice? {
-    NSLog(
-      "[SwiftUSB] Context: Searching for device vendor=0x%04X, product=0x%04X",
-      vendorID,
-      productID
+    Self.logger.debug(
+      "Searching for device vendor=0x\(String(format: "%04X", vendorID)), product=0x\(String(format: "%04X", productID))"
     )
 
     var found: USBDevice?
@@ -100,9 +102,9 @@ public final class USBContext: @unchecked Sendable {
     }
 
     if found != nil {
-      NSLog("[SwiftUSB] Context: Found requested device")
+      Self.logger.debug("Found requested device")
     } else {
-      NSLog("[SwiftUSB] Context: Device not found")
+      Self.logger.debug("Device not found")
     }
 
     return found
@@ -115,18 +117,20 @@ public final class USBContext: @unchecked Sendable {
     let count = libusb_get_device_list(self.context, deviceListPtr)
 
     guard count >= 0 else {
-      NSLog("[SwiftUSB] Context: Failed to get device list: %s", libusb_error_name(Int32(count)))
+      Self.logger.error(
+        "Failed to get device list: \(String(cString: libusb_error_name(Int32(count))))"
+      )
       deviceListPtr.deallocate()
       return nil
     }
 
     guard count > 0 else {
-      NSLog("[SwiftUSB] Context: No USB devices found")
+      Self.logger.debug("No USB devices found")
       deviceListPtr.deallocate()
       return nil
     }
 
-    NSLog("[SwiftUSB] Context: Found %d USB device(s)", count)
+    Self.logger.debug("Found \(count) USB device(s)")
     return deviceListPtr
   }
 
@@ -136,13 +140,13 @@ public final class USBContext: @unchecked Sendable {
     deviceClass: UInt8?
   ) {
     if let vid = vendorID {
-      NSLog("[SwiftUSB] Context: Filtering by vendor ID: 0x%04X", vid)
+      Self.logger.trace("Filtering by vendor ID: 0x\(String(format: "%04X", vid))")
     }
     if let pid = productID {
-      NSLog("[SwiftUSB] Context: Filtering by product ID: 0x%04X", pid)
+      Self.logger.trace("Filtering by product ID: 0x\(String(format: "%04X", pid))")
     }
     if let dc = deviceClass {
-      NSLog("[SwiftUSB] Context: Filtering by device class: %d", dc)
+      Self.logger.trace("Filtering by device class: \(dc)")
     }
   }
 
@@ -155,7 +159,7 @@ public final class USBContext: @unchecked Sendable {
     continuation: AsyncStream<USBDevice>.Continuation
   ) -> Int {
     guard let deviceList = deviceListPtr.pointee else {
-      NSLog("[SwiftUSB] Context: Device list pointer is null")
+      Self.logger.error("Device list pointer is null")
       return 0
     }
 
@@ -182,12 +186,12 @@ public final class USBContext: @unchecked Sendable {
         continue
       }
 
-      NSLog("[SwiftUSB] Context: Matching device found at index %d", i)
+      Self.logger.debug("Matching device found at index \(i)")
       continuation.yield(USBDevice(device: device, descriptor: descriptor.pointee))
       deviceCount += 1
 
       if !findAll {
-        NSLog("[SwiftUSB] Context: First matching device found, stopping search")
+        Self.logger.debug("First matching device found, stopping search")
         break
       }
     }
@@ -203,10 +207,8 @@ public final class USBContext: @unchecked Sendable {
     let result = libusb_get_device_descriptor(device, descriptor)
 
     guard result == 0 else {
-      NSLog(
-        "[SwiftUSB] Context: Failed to get descriptor for device at index %d: %s",
-        index,
-        libusb_error_name(result)
+      Self.logger.error(
+        "Failed to get descriptor for device at index \(index): \(String(cString: libusb_error_name(result)))"
       )
       descriptor.deallocate()
       return nil
@@ -216,12 +218,8 @@ public final class USBContext: @unchecked Sendable {
     let pid = descriptor.pointee.idProduct
     let devClass = descriptor.pointee.bDeviceClass
 
-    NSLog(
-      "[SwiftUSB] Context: Device[%d] vendor=0x%04X, product=0x%04X, class=%d",
-      index,
-      vid,
-      pid,
-      devClass
+    Self.logger.debug(
+      "Device[\(index)] vendor=0x\(String(format: "%04X", vid)), product=0x\(String(format: "%04X", pid)), class=\(devClass)"
     )
 
     return descriptor
@@ -239,31 +237,22 @@ public final class USBContext: @unchecked Sendable {
     let devClass = descriptor.bDeviceClass
 
     if let filterVID = vendorID, vid != filterVID {
-      NSLog(
-        "[SwiftUSB] Context: Skipping device[%d] - vendor mismatch (0x%04X != 0x%04X)",
-        index,
-        vid,
-        filterVID
+      Self.logger.trace(
+        "Skipping device[\(index)] - vendor mismatch (0x\(String(format: "%04X", vid)) != 0x\(String(format: "%04X", filterVID)))"
       )
       return false
     }
 
     if let filterPID = productID, pid != filterPID {
-      NSLog(
-        "[SwiftUSB] Context: Skipping device[%d] - product mismatch (0x%04X != 0x%04X)",
-        index,
-        pid,
-        filterPID
+      Self.logger.trace(
+        "Skipping device[\(index)] - product mismatch (0x\(String(format: "%04X", pid)) != 0x\(String(format: "%04X", filterPID)))"
       )
       return false
     }
 
     if let filterClass = deviceClass, devClass != filterClass {
-      NSLog(
-        "[SwiftUSB] Context: Skipping device[%d] - class mismatch (%d != %d)",
-        index,
-        devClass,
-        filterClass
+      Self.logger.trace(
+        "Skipping device[\(index)] - class mismatch (\(devClass) != \(filterClass))"
       )
       return false
     }

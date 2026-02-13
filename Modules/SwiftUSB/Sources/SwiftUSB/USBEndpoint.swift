@@ -1,5 +1,10 @@
 import CLibUSB
 import Foundation
+import Logging
+
+extension USBEndpoint {
+  internal static let logger = Logger(label: "io.github.xsyetopz.swiftusb.USBEndpoint")
+}
 
 public enum USBEndpointDirection: Int, Sendable {
   case out = 0x00
@@ -131,10 +136,9 @@ public struct USBEndpoint: Sendable {
     let direction = USBEndpointDirection.from(address: address)
     let transferType = USBTransferType.from(attributes: attributes)
     let addressHex = String(format: "%02X", address)
-    let initMessage =
-      "SwiftUSB: USBEndpoint initialized - address=0x\(addressHex) "
-      + "type=\(transferType) direction=\(direction)"
-    NSLog(initMessage)
+    Self.logger.debug(
+      "USBEndpoint initialized - address=0x\(addressHex) type=\(transferType) direction=\(direction)"
+    )
   }
 
   public func write(
@@ -150,13 +154,12 @@ public struct USBEndpoint: Sendable {
     on handle: USBDeviceHandle
   ) throws -> Int {
     let endpointHex = String(format: "%02X", bEndpointAddress)
-    let writeMessage =
-      "SwiftUSB: Writing \(data.count) bytes to endpoint 0x\(endpointHex) "
-      + "(timeout: \(timeout)ms)"
-    NSLog(writeMessage)
+    Self.logger.debug(
+      "Writing \(data.count) bytes to endpoint 0x\(endpointHex) (timeout: \(timeout)ms)"
+    )
 
     guard direction == .out else {
-      NSLog("SwiftUSB: Cannot write to IN endpoint")
+      Self.logger.debug("Cannot write to IN endpoint")
       throw USBError(code: USBError.errorInvalidParam, context: "Cannot write to IN endpoint")
     }
 
@@ -167,9 +170,7 @@ public struct USBEndpoint: Sendable {
       timeout: timeout
     )
 
-    let successMessage =
-      "SwiftUSB: Successfully wrote \(transferred) bytes to endpoint 0x\(endpointHex)"
-    NSLog(successMessage)
+    Self.logger.debug("Successfully wrote \(transferred) bytes to endpoint 0x\(endpointHex)")
     return transferred
   }
 
@@ -186,13 +187,12 @@ public struct USBEndpoint: Sendable {
     on handle: USBDeviceHandle
   ) throws -> Data {
     let endpointHex = String(format: "%02X", bEndpointAddress)
-    let readMessage =
-      "SwiftUSB: Reading \(length) bytes from endpoint 0x\(endpointHex) "
-      + "(timeout: \(timeout)ms)"
-    NSLog(readMessage)
+    Self.logger.debug(
+      "Reading \(length) bytes from endpoint 0x\(endpointHex) (timeout: \(timeout)ms)"
+    )
 
     guard direction == .in else {
-      NSLog("SwiftUSB: Cannot read from OUT endpoint")
+      Self.logger.debug("Cannot read from OUT endpoint")
       throw USBError(code: USBError.errorInvalidParam, context: "Cannot read from OUT endpoint")
     }
 
@@ -203,15 +203,13 @@ public struct USBEndpoint: Sendable {
       timeout: timeout
     )
 
-    let successMessage =
-      "SwiftUSB: Successfully read \(resultData.count) bytes from endpoint 0x\(endpointHex)"
-    NSLog(successMessage)
+    Self.logger.debug("Successfully read \(resultData.count) bytes from endpoint 0x\(endpointHex)")
     return resultData
   }
 
   public func clearHalt(on handle: USBDeviceHandle) throws {
     let endpointHex = String(format: "%02X", bEndpointAddress)
-    NSLog("SwiftUSB: Clearing halt on endpoint 0x\(endpointHex)")
+    Self.logger.debug("Clearing halt on endpoint 0x\(endpointHex)")
 
     let result = libusb_clear_halt(handle.handle, bEndpointAddress)
     try USBError.check(
@@ -219,7 +217,7 @@ public struct USBEndpoint: Sendable {
       context: "Clear halt failed for endpoint 0x\(endpointHex)"
     )
 
-    NSLog("SwiftUSB: Halt cleared on endpoint 0x\(endpointHex)")
+    Self.logger.debug("Halt cleared on endpoint 0x\(endpointHex)")
   }
 
   public func debugDescription() -> String {

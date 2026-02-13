@@ -1,5 +1,10 @@
 import CLibUSB
 import Foundation
+import Logging
+
+extension USBDevice {
+  internal static let logger = Logger(label: "io.github.xsyetopz.swiftusb.USBDevice")
+}
 
 public struct USBDevice: @unchecked Sendable {
   internal let device: OpaquePointer
@@ -88,37 +93,37 @@ public struct USBDevice: @unchecked Sendable {
 
   public func open() throws -> USBDeviceHandle {
     let vendorProduct = String(format: "%04X:%04X", vendorID, productID)
-    NSLog("USBDevice: Opening device \(vendorProduct)")
+    Self.logger.debug("Opening device \(vendorProduct)")
     var handle: OpaquePointer?
     let result = libusb_open(device, &handle)
     try USBError.check(result)
     guard let h = handle else {
-      NSLog("USBDevice: Failed to open device - handle is nil")
+      Self.logger.error("Failed to open device - handle is nil")
       throw USBError(message: "Failed to open device")
     }
-    NSLog("USBDevice: Successfully opened device")
+    Self.logger.debug("Successfully opened device")
     return USBDeviceHandle(handle: h)
   }
 
   public func openWithCapture() throws -> USBDeviceHandle {
     let vendorProduct = String(format: "%04X:%04X", vendorID, productID)
-    NSLog("USBDevice: Opening device with capture \(vendorProduct)")
+    Self.logger.debug("Opening device with capture \(vendorProduct)")
     var handle: OpaquePointer?
     let result = libusb_open(device, &handle)
     try USBError.check(result)
     guard let h = handle else {
-      NSLog("USBDevice: Failed to open device with capture - handle is nil")
+      Self.logger.error("Failed to open device with capture - handle is nil")
       throw USBError(message: "Failed to open device")
     }
 
     let handleObj = USBDeviceHandle(handle: h)
 
     if #available(macOS 11.0, *) {
-      NSLog("USBDevice: Detaching kernel driver for interface 0")
+      Self.logger.debug("Detaching kernel driver for interface 0")
       try handleObj.detachKernelDriver(interface: 0)
     }
 
-    NSLog("USBDevice: Successfully opened device with capture")
+    Self.logger.debug("Successfully opened device with capture")
     return handleObj
   }
 
@@ -135,13 +140,13 @@ public struct USBDevice: @unchecked Sendable {
     try USBError.check(result)
 
     let isActive = result == 1
-    NSLog("USBDevice: Kernel driver active for interface \(interface): \(isActive)")
+    Self.logger.debug("Kernel driver active for interface \(interface): \(isActive)")
     return isActive
   }
 
   public func reset() throws {
     let vendorProduct = String(format: "%04X:%04X", vendorID, productID)
-    NSLog("USBDevice: Resetting device \(vendorProduct)")
+    Self.logger.debug("Resetting device \(vendorProduct)")
     var handle: OpaquePointer?
     let openResult = libusb_open(device, &handle)
     try USBError.check(openResult)
@@ -152,11 +157,11 @@ public struct USBDevice: @unchecked Sendable {
 
     let result = libusb_reset_device(h)
     try USBError.check(result)
-    NSLog("USBDevice: Device reset successfully")
+    Self.logger.debug("Device reset successfully")
   }
 
   public func clearHalt(endpoint: UInt8) throws {
-    NSLog("USBDevice: Clearing halt on endpoint 0x\(String(format: "%02X", endpoint))")
+    Self.logger.debug("Clearing halt on endpoint 0x\(String(format: "%02X", endpoint))")
     var handle: OpaquePointer?
     let openResult = libusb_open(device, &handle)
     try USBError.check(openResult)
@@ -167,14 +172,12 @@ public struct USBDevice: @unchecked Sendable {
 
     let result = libusb_clear_halt(h, endpoint)
     try USBError.check(result)
-    NSLog("USBDevice: Cleared halt on endpoint 0x\(String(format: "%02X", endpoint))")
+    Self.logger.debug("Cleared halt on endpoint 0x\(String(format: "%02X", endpoint))")
   }
 
   public func getStringDescriptor(index: Int, langID: UInt16? = nil) throws -> String {
     let langIDText = langID.map { String($0) } ?? "default"
-    let descriptorMessage =
-      "USBDevice: Getting string descriptor at index \(index), langID: \(langIDText)"
-    NSLog(descriptorMessage)
+    Self.logger.debug("Getting string descriptor at index \(index), langID: \(langIDText)")
 
     var handle: OpaquePointer?
     let openResult = libusb_open(device, &handle)
@@ -189,17 +192,17 @@ public struct USBDevice: @unchecked Sendable {
     let result = libusb_get_string_descriptor_ascii(h, UInt8(index), &buffer, 256)
 
     if result < 0 {
-      NSLog("USBDevice: Failed to get string descriptor - error \(result)")
+      Self.logger.error("Failed to get string descriptor - error \(result)")
       try USBError.check(result)
     }
 
     let stringData = buffer.prefix(Int(result))
     if let str = String(bytes: Array(stringData), encoding: .utf8) {
-      NSLog("USBDevice: Got string descriptor: \(str)")
+      Self.logger.debug("Got string descriptor: \(str)")
       return str
     }
 
-    NSLog("USBDevice: Failed to decode string descriptor")
+    Self.logger.error("Failed to decode string descriptor")
     throw USBError(message: "Failed to decode string descriptor")
   }
 
@@ -237,7 +240,7 @@ public struct USBDevice: @unchecked Sendable {
     let result = libusb_get_configuration(h, &configuration)
     try USBError.check(result)
 
-    NSLog("USBDevice: Active configuration: \(configuration)")
+    Self.logger.debug("Active configuration: \(configuration)")
     return Int(configuration)
   }
 
@@ -259,7 +262,7 @@ public struct USBDevice: @unchecked Sendable {
     }
     defer { libusb_free_config_descriptor(desc) }
 
-    NSLog("USBDevice: Got configuration descriptor at index \(index)")
+    Self.logger.debug("Got configuration descriptor at index \(index)")
     return USBConfigurationDescriptor(descriptor: desc.pointee)
   }
 }

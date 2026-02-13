@@ -14,12 +14,16 @@ public let kPackage = Package(
     )
   ],
   dependencies: [
-    .package(url: "https://github.com/apple/swift-testing.git", branch: "main")
+    .package(url: "https://github.com/apple/swift-testing.git", branch: "main"),
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.6.0")
   ],
   targets: [
     .target(
       name: "SwiftUSB",
-      dependencies: ["CLibUSB"],
+      dependencies: [
+        "CLibUSB",
+        .product(name: "Logging", package: "swift-log")
+      ],
       swiftSettings: [.swiftLanguageMode(.v6)]
     ),
     .systemLibrary(

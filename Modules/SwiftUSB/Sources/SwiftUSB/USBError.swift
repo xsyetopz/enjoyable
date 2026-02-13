@@ -1,5 +1,10 @@
 import CLibUSB
 import Foundation
+import Logging
+
+extension USBError {
+  internal static let logger = Logger(label: "io.github.xsyetopz.swiftusb.USBError")
+}
 
 public struct USBError: Error, Sendable {
   public static let success: Int32 = 0
@@ -119,9 +124,9 @@ public struct USBError: Error, Sendable {
 
   private static func logError(code: Int32, message: String, context: String?) {
     if let context {
-      NSLog("[SwiftUSB] Error: %@ (code: %d, context: %@)", message, code, context)
+      Self.logger.error("\(message) (code: \(code), context: \(context))")
     } else {
-      NSLog("[SwiftUSB] Error: %@ (code: %d)", message, code)
+      Self.logger.error("\(message) (code: \(code))")
     }
   }
 

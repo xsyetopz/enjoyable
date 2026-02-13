@@ -1,5 +1,6 @@
 import CLibUSB
 import Foundation
+import Logging
 
 @usableFromInline internal let defaultTimeout: UInt32 = 5000
 private let isoMaxPacketSize = 1024
@@ -11,11 +12,11 @@ public extension USBDeviceHandle {
     data: Data,
     timeout: UInt32 = defaultTimeout
   ) throws -> Int {
-    NSLog("SwiftUSB: Bulk transfer OUT to endpoint \(endpoint): \(data.count) bytes")
+    USBDeviceHandle.logger.debug("Bulk transfer OUT to endpoint \(endpoint): \(data.count) bytes")
 
     let transferred = try bulkWrite(on: handle, to: endpoint, data: data, timeout: timeout)
 
-    NSLog("SwiftUSB: Bulk transfer completed: \(transferred) bytes transferred")
+    USBDeviceHandle.logger.debug("Bulk transfer completed: \(transferred) bytes transferred")
     return transferred
   }
 
@@ -24,11 +25,13 @@ public extension USBDeviceHandle {
     length: Int,
     timeout: UInt32 = defaultTimeout
   ) throws -> Data {
-    NSLog("SwiftUSB: Bulk transfer IN from endpoint \(endpoint): requesting \(length) bytes")
+    USBDeviceHandle.logger.debug(
+      "Bulk transfer IN from endpoint \(endpoint): requesting \(length) bytes"
+    )
 
     let resultData = try bulkRead(on: handle, from: endpoint, length: length, timeout: timeout)
 
-    NSLog("SwiftUSB: Bulk transfer completed: \(resultData.count) bytes read")
+    USBDeviceHandle.logger.debug("Bulk transfer completed: \(resultData.count) bytes read")
     return resultData
   }
 }
@@ -39,7 +42,9 @@ public extension USBDeviceHandle {
     data: [UInt8],
     timeout: UInt32 = defaultTimeout
   ) throws -> Int {
-    NSLog("SwiftUSB: Interrupt transfer OUT to endpoint \(endpoint): \(data.count) bytes")
+    USBDeviceHandle.logger.debug(
+      "Interrupt transfer OUT to endpoint \(endpoint): \(data.count) bytes"
+    )
     var transferred: Int32 = 0
     var buffer = data
 
@@ -55,10 +60,10 @@ public extension USBDeviceHandle {
     }
 
     if result < 0 {
-      NSLog("SwiftUSB: Interrupt transfer failed with error \(result)")
+      USBDeviceHandle.logger.error("Interrupt transfer failed with error \(result)")
       try USBError.check(result)
     } else {
-      NSLog("SwiftUSB: Interrupt transfer completed: \(transferred) bytes transferred")
+      USBDeviceHandle.logger.debug("Interrupt transfer completed: \(transferred) bytes transferred")
     }
 
     return Int(transferred)
@@ -69,7 +74,9 @@ public extension USBDeviceHandle {
     length: Int,
     timeout: UInt32 = defaultTimeout
   ) throws -> [UInt8] {
-    NSLog("SwiftUSB: Interrupt transfer IN from endpoint \(endpoint): requesting \(length) bytes")
+    USBDeviceHandle.logger.debug(
+      "Interrupt transfer IN from endpoint \(endpoint): requesting \(length) bytes"
+    )
     var buffer = [UInt8](repeating: 0, count: length)
     var transferred: Int32 = 0
 
@@ -86,7 +93,7 @@ public extension USBDeviceHandle {
 
     try USBError.check(result)
     let resultData = Array(buffer[0..<Int(transferred)])
-    NSLog("SwiftUSB: Interrupt transfer completed: \(transferred) bytes read")
+    USBDeviceHandle.logger.debug("Interrupt transfer completed: \(transferred) bytes read")
     return resultData
   }
 }
@@ -97,7 +104,9 @@ public extension USBDeviceHandle {
     data: Data,
     timeout: UInt32 = defaultTimeout
   ) async throws -> Int {
-    NSLog("SwiftUSB: Isochronous transfer OUT to endpoint \(endpoint): \(data.count) bytes")
+    USBDeviceHandle.logger.debug(
+      "Isochronous transfer OUT to endpoint \(endpoint): \(data.count) bytes"
+    )
 
     return try await withCheckedThrowingContinuation { continuation in
       guard
@@ -120,7 +129,9 @@ public extension USBDeviceHandle {
     length: Int,
     timeout: UInt32 = defaultTimeout
   ) async throws -> Data {
-    NSLog("SwiftUSB: Isochronous transfer IN from endpoint \(endpoint): requesting \(length) bytes")
+    USBDeviceHandle.logger.debug(
+      "Isochronous transfer IN from endpoint \(endpoint): requesting \(length) bytes"
+    )
 
     return try await withCheckedThrowingContinuation { continuation in
       guard
@@ -182,15 +193,17 @@ internal extension USBDeviceHandle {
           switch status {
           case LIBUSB_TRANSFER_COMPLETED:
             let bytesTransferred = Int(transfer.pointee.actual_length)
-            NSLog("SwiftUSB: Isochronous transfer completed: \(bytesTransferred) bytes")
+            USBDeviceHandle.logger.debug(
+              "Isochronous transfer completed: \(bytesTransferred) bytes"
+            )
             holder.continuation?.resume(returning: bytesTransferred)
 
           case LIBUSB_TRANSFER_ERROR:
-            NSLog("SwiftUSB: Isochronous transfer error")
+            USBDeviceHandle.logger.error("Isochronous transfer error")
             holder.continuation?.resume(throwing: USBError(code: -1))
 
           default:
-            NSLog("SwiftUSB: Isochronous transfer unknown status: \(status)")
+            USBDeviceHandle.logger.debug("Isochronous transfer unknown status: \(status)")
             holder.continuation?.resume(throwing: USBError(code: -1))
           }
 
@@ -213,7 +226,7 @@ internal extension USBDeviceHandle {
     let result = libusb_submit_transfer(transfer)
 
     if result < 0 {
-      NSLog("SwiftUSB: Failed to submit isochronous transfer: error \(result)")
+      USBDeviceHandle.logger.error("Failed to submit isochronous transfer: error \(result)")
       libusb_free_transfer(transfer)
       continuation.resume(throwing: USBError(code: result))
     }
@@ -265,7 +278,7 @@ internal extension USBDeviceHandle {
     let result = libusb_submit_transfer(transfer)
 
     if result < 0 {
-      NSLog("SwiftUSB: Failed to submit isochronous read transfer: error \(result)")
+      USBDeviceHandle.logger.error("Failed to submit isochronous read transfer: error \(result)")
       libusb_free_transfer(transfer)
       continuation.resume(throwing: USBError(code: result))
     }
@@ -280,7 +293,7 @@ internal extension USBDeviceHandle {
 
     switch status {
     case LIBUSB_TRANSFER_COMPLETED:
-      NSLog("SwiftUSB: Isochronous read completed: \(bytesTransferred) bytes")
+      USBDeviceHandle.logger.debug("Isochronous read completed: \(bytesTransferred) bytes")
       let bufferPtr = transfer.pointee.buffer
       var resultData = Data()
       if let bufferPtr, bytesTransferred > 0 {
@@ -289,27 +302,27 @@ internal extension USBDeviceHandle {
       holder.continuation?.resume(returning: resultData)
 
     case LIBUSB_TRANSFER_ERROR:
-      NSLog("SwiftUSB: Isochronous read error")
+      USBDeviceHandle.logger.error("Isochronous read error")
       holder.continuation?.resume(throwing: USBError(code: -1))
 
     case LIBUSB_TRANSFER_TIMED_OUT:
-      NSLog("SwiftUSB: Isochronous read timed out")
+      USBDeviceHandle.logger.debug("Isochronous read timed out")
       holder.continuation?.resume(throwing: USBError(code: -110))
 
     case LIBUSB_TRANSFER_CANCELLED:
-      NSLog("SwiftUSB: Isochronous read cancelled")
+      USBDeviceHandle.logger.debug("Isochronous read cancelled")
       holder.continuation?.resume(throwing: USBError(code: -1))
 
     case LIBUSB_TRANSFER_NO_DEVICE:
-      NSLog("SwiftUSB: Isochronous read - device disconnected")
+      USBDeviceHandle.logger.error("Isochronous read - device disconnected")
       holder.continuation?.resume(throwing: USBError(code: -1))
 
     case LIBUSB_TRANSFER_OVERFLOW:
-      NSLog("SwiftUSB: Isochronous read overflow")
+      USBDeviceHandle.logger.error("Isochronous read overflow")
       holder.continuation?.resume(throwing: USBError(code: -1))
 
     default:
-      NSLog("SwiftUSB: Isochronous read unknown status: \(status)")
+      USBDeviceHandle.logger.debug("Isochronous read unknown status: \(status)")
       holder.continuation?.resume(throwing: USBError(code: -1))
     }
 
@@ -339,7 +352,7 @@ private func handleIsoReadStatus(
 
   switch status {
   case LIBUSB_TRANSFER_COMPLETED:
-    NSLog("SwiftUSB: Isochronous read completed: \(bytesTransferred) bytes")
+    USBDeviceHandle.logger.debug("Isochronous read completed: \(bytesTransferred) bytes")
     let bufferPtr = transfer.pointee.buffer
     var resultData = Data()
     if let bufferPtr, bytesTransferred > 0 {
@@ -348,27 +361,27 @@ private func handleIsoReadStatus(
     holder.continuation?.resume(returning: resultData)
 
   case LIBUSB_TRANSFER_ERROR:
-    NSLog("SwiftUSB: Isochronous read error")
+    USBDeviceHandle.logger.error("Isochronous read error")
     holder.continuation?.resume(throwing: USBError(code: -1))
 
   case LIBUSB_TRANSFER_TIMED_OUT:
-    NSLog("SwiftUSB: Isochronous read timed out")
+    USBDeviceHandle.logger.debug("Isochronous read timed out")
     holder.continuation?.resume(throwing: USBError(code: -110))
 
   case LIBUSB_TRANSFER_CANCELLED:
-    NSLog("SwiftUSB: Isochronous read cancelled")
+    USBDeviceHandle.logger.debug("Isochronous read cancelled")
     holder.continuation?.resume(throwing: USBError(code: -1))
 
   case LIBUSB_TRANSFER_NO_DEVICE:
-    NSLog("SwiftUSB: Isochronous read - device disconnected")
+    USBDeviceHandle.logger.error("Isochronous read - device disconnected")
     holder.continuation?.resume(throwing: USBError(code: -1))
 
   case LIBUSB_TRANSFER_OVERFLOW:
-    NSLog("SwiftUSB: Isochronous read overflow")
+    USBDeviceHandle.logger.error("Isochronous read overflow")
     holder.continuation?.resume(throwing: USBError(code: -1))
 
   default:
-    NSLog("SwiftUSB: Isochronous read unknown status: \(status)")
+    USBDeviceHandle.logger.debug("Isochronous read unknown status: \(status)")
     holder.continuation?.resume(throwing: USBError(code: -1))
   }
 }

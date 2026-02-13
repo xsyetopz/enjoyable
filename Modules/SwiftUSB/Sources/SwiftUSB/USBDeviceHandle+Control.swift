@@ -1,5 +1,6 @@
 import CLibUSB
 import Foundation
+import Logging
 
 public extension USBDeviceHandle {
   func controlTransfer(
@@ -14,9 +15,8 @@ public extension USBDeviceHandle {
     let length = buffer.count
     let isInput = (requestType & 0x80) != 0
 
-    NSLog(
-      "SwiftUSB: Control transfer: type=\(requestType) request=\(request) value=\(value) "
-        + "index=\(index) length=\(length) timeout=\(timeout)"
+    USBDeviceHandle.logger.debug(
+      "Control transfer: type=\(requestType) request=\(request) value=\(value) index=\(index) length=\(length) timeout=\(timeout)"
     )
 
     if isInput {
@@ -35,11 +35,11 @@ public extension USBDeviceHandle {
         )
       }
       if result < 0 {
-        NSLog("SwiftUSB: Control transfer failed with error \(result)")
+        USBDeviceHandle.logger.error("Control transfer failed with error \(result)")
         throw USBError(code: result)
       }
       let resultData = Data(receiveBuffer[0..<Int(result)])
-      NSLog("SwiftUSB: Control transfer completed: \(Int(result)) bytes")
+      USBDeviceHandle.logger.debug("Control transfer completed: \(Int(result)) bytes")
       return resultData
     } else {
       let result = buffer.withUnsafeBufferPointer { ptr in
@@ -55,10 +55,10 @@ public extension USBDeviceHandle {
         )
       }
       if result < 0 {
-        NSLog("SwiftUSB: Control transfer failed with error \(result)")
+        USBDeviceHandle.logger.error("Control transfer failed with error \(result)")
         throw USBError(code: result)
       }
-      NSLog("SwiftUSB: Control transfer completed: \(Int(result)) bytes")
+      USBDeviceHandle.logger.debug("Control transfer completed: \(Int(result)) bytes")
       return Data()
     }
   }

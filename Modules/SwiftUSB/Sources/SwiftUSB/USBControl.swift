@@ -1,4 +1,9 @@
 import Foundation
+import Logging
+
+extension USBControl {
+  internal static let logger = Logger(label: "io.github.xsyetopz.swiftusb.USBControl")
+}
 
 public enum USBControlRecipient {
   case device
@@ -37,7 +42,9 @@ public enum USBControl {
   ) throws -> UInt16 {
     let (bmRequestType, wIndex) = parseRecipient(recipient, direction: 0x80, interface: interface)
 
-    NSLog("USBControl: getStatus - type=0x%02X request=0x00 index=%d", bmRequestType, wIndex)
+    Self.logger.debug(
+      "getStatus - type=0x\(String(format: "%02X", bmRequestType)) request=0x00 index=\(wIndex)"
+    )
 
     let data = try handle.controlTransfer(
       requestType: bmRequestType,
@@ -48,12 +55,12 @@ public enum USBControl {
     )
 
     guard data.count >= 2 else {
-      NSLog("USBControl: getStatus - insufficient data returned")
+      Self.logger.debug("getStatus - insufficient data returned")
       throw USBError(code: -99, context: "Control transfer returned insufficient data")
     }
 
     let status = UInt16(data[0]) | (UInt16(data[1]) << 8)
-    NSLog("USBControl: getStatus - status=0x%04X", status)
+    Self.logger.debug("getStatus - status=0x\(String(format: "%04X", status))")
     return status
   }
 
@@ -65,11 +72,8 @@ public enum USBControl {
   ) throws {
     let (bmRequestType, wIndex) = parseRecipient(recipient, direction: 0x00, interface: interface)
 
-    NSLog(
-      "USBControl: clearFeature - type=0x%02X request=0x01 feature=%d index=%d",
-      bmRequestType,
-      feature,
-      wIndex
+    Self.logger.debug(
+      "clearFeature - type=0x\(String(format: "%02X", bmRequestType)) request=0x01 feature=\(feature) index=\(wIndex)"
     )
 
     if feature == endpointHalt {
@@ -84,7 +88,7 @@ public enum USBControl {
       )
     }
 
-    NSLog("USBControl: clearFeature - completed successfully")
+    Self.logger.debug("clearFeature - completed successfully")
   }
 
   public static func setFeature(
@@ -95,11 +99,8 @@ public enum USBControl {
   ) throws {
     let (bmRequestType, wIndex) = parseRecipient(recipient, direction: 0x00, interface: interface)
 
-    NSLog(
-      "USBControl: setFeature - type=0x%02X request=0x03 feature=%d index=%d",
-      bmRequestType,
-      feature,
-      wIndex
+    Self.logger.debug(
+      "setFeature - type=0x\(String(format: "%02X", bmRequestType)) request=0x03 feature=\(feature) index=\(wIndex)"
     )
 
     _ = try handle.controlTransfer(
@@ -110,7 +111,7 @@ public enum USBControl {
       data: nil
     )
 
-    NSLog("USBControl: setFeature - completed successfully")
+    Self.logger.debug("setFeature - completed successfully")
   }
 
   public static func getDescriptor(
@@ -138,13 +139,8 @@ public enum USBControl {
     let wValue = UInt16(type) << 8 | UInt16(index)
     let bmRequestType = makeRequestType(direction: 0x80, type: 0x00, recipient: 0x00)
 
-    NSLog(
-      "USBControl: getDescriptor - type=0x%02X descType=0x%02X descIndex=%d langID=%d length=%d",
-      bmRequestType,
-      type,
-      index,
-      languageID,
-      length
+    Self.logger.debug(
+      "getDescriptor - type=0x\(String(format: "%02X", bmRequestType)) descType=0x\(String(format: "%02X", type)) descIndex=\(index) langID=\(languageID) length=\(length)"
     )
 
     let data = try handle.controlTransfer(
@@ -157,11 +153,11 @@ public enum USBControl {
     )
 
     if data.count < 2 {
-      NSLog("USBControl: getDescriptor - invalid descriptor returned")
+      Self.logger.debug("getDescriptor - invalid descriptor returned")
       throw USBError(code: -99, context: "Invalid descriptor returned")
     }
 
-    NSLog("USBControl: getDescriptor - received %d bytes", data.count)
+    Self.logger.debug("getDescriptor - received \(data.count) bytes")
     return data
   }
 
@@ -176,13 +172,8 @@ public enum USBControl {
     let wIndex = languageID ?? 0
     let bmRequestType = makeRequestType(direction: 0x00, type: 0x00, recipient: 0x00)
 
-    NSLog(
-      "USBControl: setDescriptor - type=0x%02X descType=0x%02X descIndex=%d langID=%d length=%d",
-      bmRequestType,
-      type,
-      index,
-      wIndex,
-      descriptor.count
+    Self.logger.debug(
+      "setDescriptor - type=0x\(String(format: "%02X", bmRequestType)) descType=0x\(String(format: "%02X", type)) descIndex=\(index) langID=\(wIndex) length=\(descriptor.count)"
     )
 
     _ = try handle.controlTransfer(
@@ -193,13 +184,15 @@ public enum USBControl {
       data: descriptor
     )
 
-    NSLog("USBControl: setDescriptor - completed successfully")
+    Self.logger.debug("setDescriptor - completed successfully")
   }
 
   public static func getConfiguration(on handle: USBDeviceHandle) throws -> UInt8 {
     let bmRequestType = makeRequestType(direction: 0x80, type: 0x00, recipient: 0x00)
 
-    NSLog("USBControl: getConfiguration - type=0x%02X request=0x08", bmRequestType)
+    Self.logger.debug(
+      "getConfiguration - type=0x\(String(format: "%02X", bmRequestType)) request=0x08"
+    )
 
     let data = try handle.controlTransfer(
       requestType: bmRequestType,
@@ -210,11 +203,11 @@ public enum USBControl {
     )
 
     guard let firstByte = data.first else {
-      NSLog("USBControl: getConfiguration - no data returned")
+      Self.logger.debug("getConfiguration - no data returned")
       throw USBError(code: -99, context: "Control transfer returned no data")
     }
 
-    NSLog("USBControl: getConfiguration - configuration=%d", firstByte)
+    Self.logger.debug("getConfiguration - configuration=\(firstByte)")
     return firstByte
   }
 
@@ -222,7 +215,7 @@ public enum USBControl {
     on handle: USBDeviceHandle,
     configuration: Int
   ) throws {
-    NSLog("USBControl: setConfiguration - configuration=%d", configuration)
+    Self.logger.debug("setConfiguration - configuration=\(configuration)")
 
     try handle.setConfiguration(configuration)
   }
@@ -233,10 +226,8 @@ public enum USBControl {
   ) throws -> UInt8 {
     let bmRequestType = makeRequestType(direction: 0x81, type: 0x00, recipient: 0x01)
 
-    NSLog(
-      "USBControl: getInterface - type=0x%02X request=0x0A interface=%d",
-      bmRequestType,
-      interfaceNumber
+    Self.logger.debug(
+      "getInterface - type=0x\(String(format: "%02X", bmRequestType)) request=0x0A interface=\(interfaceNumber)"
     )
 
     let data = try handle.controlTransfer(
@@ -248,11 +239,11 @@ public enum USBControl {
     )
 
     guard let firstByte = data.first else {
-      NSLog("USBControl: getInterface - no data returned")
+      Self.logger.debug("getInterface - no data returned")
       throw USBError(code: -99, context: "Control transfer returned no data")
     }
 
-    NSLog("USBControl: getInterface - altSetting=%d", firstByte)
+    Self.logger.debug("getInterface - altSetting=\(firstByte)")
     return firstByte
   }
 
@@ -261,10 +252,8 @@ public enum USBControl {
     interfaceNumber: Int,
     alternateSetting: Int
   ) throws {
-    NSLog(
-      "USBControl: setInterface - interface=%d alternateSetting=%d",
-      interfaceNumber,
-      alternateSetting
+    Self.logger.debug(
+      "setInterface - interface=\(interfaceNumber) alternateSetting=\(alternateSetting)"
     )
 
     try handle.setInterfaceAltSetting(
