@@ -37,9 +37,10 @@ public struct USBInterface: Sendable {
 
     self.cachedEndpoints = nil
 
-    Self.logger.debug(
-      "USBInterface initialized - number=\(self.bInterfaceNumber) altSetting=\(self.bAlternateSetting) endpoints=\(self.bNumEndpoints)"
-    )
+    let message =
+      "USBInterface initialized - number=\(self.bInterfaceNumber) "
+      + "altSetting=\(self.bAlternateSetting) endpoints=\(self.bNumEndpoints)"
+    Self.logger.debug(Logger.Message(stringLiteral: message))
   }
 
   private mutating func loadEndpoints(from descriptor: UnsafePointer<libusb_interface_descriptor>) {
@@ -133,7 +134,7 @@ public struct USBInterface: Sendable {
     0xE0: "Wireless Controller",
     0xEF: "Miscellaneous",
     0xFE: "Application Specific",
-    0xFF: "Vendor Specific",
+    0xFF: "Vendor Specific"
   ]
 
   public func detailedDescription() -> String {

@@ -137,7 +137,11 @@ public struct USBEndpoint: Sendable {
     let transferType = USBTransferType.from(attributes: attributes)
     let addressHex = String(format: "%02X", address)
     Self.logger.debug(
-      "USBEndpoint initialized - address=0x\(addressHex) type=\(transferType) direction=\(direction)"
+      Logger.Message(
+        stringLiteral:
+          "USBEndpoint initialized - address=0x\(addressHex) type=\(transferType) "
+          + "direction=\(direction)"
+      )
     )
   }
 

@@ -91,9 +91,10 @@ public final class USBContext: @unchecked Sendable {
   }
 
   public func findDevice(vendorID: UInt16, productID: UInt16) async -> USBDevice? {
-    Self.logger.debug(
-      "Searching for device vendor=0x\(String(format: "%04X", vendorID)), product=0x\(String(format: "%04X", productID))"
-    )
+    let vendorHex = String(format: "%04X", vendorID)
+    let productHex = String(format: "%04X", productID)
+    let message = "Searching for device vendor=0x\(vendorHex), product=0x\(productHex)"
+    Self.logger.debug(Logger.Message(stringLiteral: message))
 
     var found: USBDevice?
     for await device in findDevices(vendorID: vendorID, productID: productID, findAll: false) {
@@ -207,9 +208,10 @@ public final class USBContext: @unchecked Sendable {
     let result = libusb_get_device_descriptor(device, descriptor)
 
     guard result == 0 else {
-      Self.logger.error(
-        "Failed to get descriptor for device at index \(index): \(String(cString: libusb_error_name(result)))"
-      )
+      let errorMessage =
+        "Failed to get descriptor for device at index \(index): "
+        + "\(String(cString: libusb_error_name(result)))"
+      Self.logger.error(Logger.Message(stringLiteral: errorMessage))
       descriptor.deallocate()
       return nil
     }
@@ -218,9 +220,11 @@ public final class USBContext: @unchecked Sendable {
     let pid = descriptor.pointee.idProduct
     let devClass = descriptor.pointee.bDeviceClass
 
-    Self.logger.debug(
-      "Device[\(index)] vendor=0x\(String(format: "%04X", vid)), product=0x\(String(format: "%04X", pid)), class=\(devClass)"
-    )
+    let vendorHex = String(format: "%04X", vid)
+    let productHex = String(format: "%04X", pid)
+    let message =
+      "Device[\(index)] vendor=0x\(vendorHex), " + "product=0x\(productHex), class=\(devClass)"
+    Self.logger.debug(Logger.Message(stringLiteral: message))
 
     return descriptor
   }
@@ -237,16 +241,20 @@ public final class USBContext: @unchecked Sendable {
     let devClass = descriptor.bDeviceClass
 
     if let filterVID = vendorID, vid != filterVID {
-      Self.logger.trace(
-        "Skipping device[\(index)] - vendor mismatch (0x\(String(format: "%04X", vid)) != 0x\(String(format: "%04X", filterVID)))"
-      )
+      let vidHex = String(format: "%04X", vid)
+      let filterHex = String(format: "%04X", filterVID)
+      let message =
+        "Skipping device[\(index)] - vendor mismatch " + "(0x\(vidHex) != 0x\(filterHex))"
+      Self.logger.trace(Logger.Message(stringLiteral: message))
       return false
     }
 
     if let filterPID = productID, pid != filterPID {
-      Self.logger.trace(
-        "Skipping device[\(index)] - product mismatch (0x\(String(format: "%04X", pid)) != 0x\(String(format: "%04X", filterPID)))"
-      )
+      let pidHex = String(format: "%04X", pid)
+      let filterHex = String(format: "%04X", filterPID)
+      let message =
+        "Skipping device[\(index)] - product mismatch " + "(0x\(pidHex) != 0x\(filterHex))"
+      Self.logger.trace(Logger.Message(stringLiteral: message))
       return false
     }
 

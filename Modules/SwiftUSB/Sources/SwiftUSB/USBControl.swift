@@ -73,7 +73,10 @@ public enum USBControl {
     let (bmRequestType, wIndex) = parseRecipient(recipient, direction: 0x00, interface: interface)
 
     Self.logger.debug(
-      "clearFeature - type=0x\(String(format: "%02X", bmRequestType)) request=0x01 feature=\(feature) index=\(wIndex)"
+      Logger.Message(
+        stringLiteral: "clearFeature - type=0x\(String(format: "%02X", bmRequestType)) "
+          + "request=0x01 feature=\(feature) index=\(wIndex)"
+      )
     )
 
     if feature == endpointHalt {
@@ -100,7 +103,10 @@ public enum USBControl {
     let (bmRequestType, wIndex) = parseRecipient(recipient, direction: 0x00, interface: interface)
 
     Self.logger.debug(
-      "setFeature - type=0x\(String(format: "%02X", bmRequestType)) request=0x03 feature=\(feature) index=\(wIndex)"
+      Logger.Message(
+        stringLiteral: "setFeature - type=0x\(String(format: "%02X", bmRequestType)) "
+          + "request=0x03 feature=\(feature) index=\(wIndex)"
+      )
     )
 
     _ = try handle.controlTransfer(
@@ -139,9 +145,12 @@ public enum USBControl {
     let wValue = UInt16(type) << 8 | UInt16(index)
     let bmRequestType = makeRequestType(direction: 0x80, type: 0x00, recipient: 0x00)
 
-    Self.logger.debug(
-      "getDescriptor - type=0x\(String(format: "%02X", bmRequestType)) descType=0x\(String(format: "%02X", type)) descIndex=\(index) langID=\(languageID) length=\(length)"
-    )
+    let typeHex = String(format: "%02X", bmRequestType)
+    let descTypeHex = String(format: "%02X", type)
+    let message =
+      "getDescriptor - type=0x\(typeHex) descType=0x\(descTypeHex) "
+      + "descIndex=\(index) langID=\(languageID) length=\(length)"
+    Self.logger.debug(Logger.Message(stringLiteral: message))
 
     let data = try handle.controlTransfer(
       requestType: bmRequestType,
@@ -172,9 +181,12 @@ public enum USBControl {
     let wIndex = languageID ?? 0
     let bmRequestType = makeRequestType(direction: 0x00, type: 0x00, recipient: 0x00)
 
-    Self.logger.debug(
-      "setDescriptor - type=0x\(String(format: "%02X", bmRequestType)) descType=0x\(String(format: "%02X", type)) descIndex=\(index) langID=\(wIndex) length=\(descriptor.count)"
-    )
+    let typeHex = String(format: "%02X", bmRequestType)
+    let descTypeHex = String(format: "%02X", type)
+    let message =
+      "setDescriptor - type=0x\(typeHex) descType=0x\(descTypeHex) "
+      + "descIndex=\(index) langID=\(wIndex) length=\(descriptor.count)"
+    Self.logger.debug(Logger.Message(stringLiteral: message))
 
     _ = try handle.controlTransfer(
       requestType: bmRequestType,
@@ -226,8 +238,9 @@ public enum USBControl {
   ) throws -> UInt8 {
     let bmRequestType = makeRequestType(direction: 0x81, type: 0x00, recipient: 0x01)
 
+    let typeHex = String(format: "%02X", bmRequestType)
     Self.logger.debug(
-      "getInterface - type=0x\(String(format: "%02X", bmRequestType)) request=0x0A interface=\(interfaceNumber)"
+      "getInterface - type=0x\(typeHex) request=0x0A interface=\(interfaceNumber)"
     )
 
     let data = try handle.controlTransfer(
