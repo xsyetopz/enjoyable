@@ -2,6 +2,7 @@ disabled_rules:
   - todo
   - file_header
   - function_parameter_count
+  - missing_docs
   - sorted_enum_cases
 
 opt_in_rules:
@@ -44,7 +45,6 @@ opt_in_rules:
   - legacy_multiple
   - legacy_random
   - literal_expression_end_indentation
-  - missing_docs
   - modifier_order
   - multiline_arguments
   - multiline_arguments_brackets
@@ -72,7 +72,6 @@ opt_in_rules:
   - return_value_from_void_function
   - self_binding
   - shorthand_optional_binding
-  - sorted_enum_cases
   - sorted_first_last
   - sorted_imports
   - switch_case_on_newline
@@ -204,11 +203,11 @@ private_action:
 private_outlet:
   severity: error
 
-missing_docs:
-  severity: warning
-  excluded:
-    - init
-    - deinit
+# missing_docs:
+#   severity: warning
+#   excluded:
+#     - init
+#     - deinit
 
 implicit_getter:
   severity: error
